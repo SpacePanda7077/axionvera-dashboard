@@ -1,37 +1,48 @@
 # Contributing to Axionvera Dashboard
 
-Thanks for contributing! This repo is designed to be modular and easy to extend.
+Thank you for your interest in contributing to the Axionvera Dashboard! We strive to maintain a high standard of code quality and professional collaboration.
 
-## Development Setup
+## 🛠 Development Setup
+
+1. **Clone the repository**
+2. **Install dependencies**: `npm install` (Ensure Node.js `v18+` and npm `v9+` are used)
+3. **Set up Environment**: `cp .env.example .env.local` and fill in necessary variables.
+4. **Start development server**: `npm run dev`
+
+## 🌿 Branch Naming Convention
+
+To maintain a clean and searchable git history, we follow a strict branching strategy:
+
+| Prefix | Use Case | Example |
+| :--- | :--- | :--- |
+| `feat/` | New features or enhancements | `feat/staking-ui` |
+| `fix/` | Bug fixes and patches | `fix/wallet-disconnect` |
+| `docs/` | Documentation updates | `docs/api-ref` |
+| `refactor/` | Code restructuring (no logic change) | `refactor/auth-hook` |
+| `chore/` | Maintenance and dependencies | `chore/update-nextjs` |
+
+## 🧪 Quality Standards
+
+Before submitting a Pull Request, please ensure all checks pass:
 
 ```bash
-npm install
-npm run dev
+npm run lint       # Linting check
+npm run typecheck  # TypeScript validation
+npm run test       # Unit and Integration tests
 ```
 
-## Quality Checks
+## 📝 Pull Request Guidelines
 
-Run these before opening a PR:
+1. **Atomic Commits**: Keep commits focused and descriptive.
+2. **Feature Branches**: Never commit directly to `main`.
+3. **Linked Issues**: Reference the relevant issue number in your PR description.
+4. **Documentation**: Update the README or inline docs if your changes affect public APIs or setup.
 
-```bash
-npm run lint
-npm run typecheck
-npm run test
-```
+## 🛡 Security
 
-## Project Conventions
+If you discover a security vulnerability, please do NOT open a public issue. Email the maintainers at security@axionvera.network or contact us via our official channels.
 
-- Components live in `src/components` and are kept presentational when possible
-- Contract and SDK integration should go through `src/hooks/useVault.ts`
-- Wallet integration should go through `src/hooks/useWallet.ts`
-- Network and contract configuration lives in `src/utils/networkConfig.ts`
+---
 
-## Pull Requests
+*Axionvera - Standardizing open-source excellence on Stellar.*
 
-- Keep PRs focused and small when possible
-- Include tests for new behavior (UI or hooks)
-- Avoid introducing new dependencies unless necessary
-
-## Reporting Security Issues
-
-Please do not open a public issue for security vulnerabilities. Contact the maintainers privately.
