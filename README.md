@@ -78,4 +78,4 @@ We welcome professional contributions! Please refer to [CONTRIBUTING.md](CONTRIB
 
 ## 📜 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for the full text and legal clearances as part of the Axionvera Network open-source contributions.

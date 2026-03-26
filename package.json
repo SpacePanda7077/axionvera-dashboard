@@ -2,11 +2,11 @@
   "name": "axionvera-dashboard",
   "version": "0.1.0",
   "private": true,
-  "description": "Web dashboard for interacting with Axionvera Network smart contracts on Stellar (Soroban).",
-  "author": "Axionvera",
+  "description": "Official open-source web dashboard for the Axionvera Network on Stellar. Securely interact with Axionvera vault contracts using Soroban.",
+  "author": "Axionvera <contact@axionvera.network>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JerryIdoko/axionvera-dashboard.git"
+    "url": "git+https://github.com/Axionvera/axionvera-dashboard.git"
   },
   "license": "MIT",
   "scripts": {
