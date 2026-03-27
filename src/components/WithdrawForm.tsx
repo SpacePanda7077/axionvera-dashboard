@@ -1,6 +1,7 @@
 import { FormInput } from './FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { withdrawSchema, WithdrawFormData } from '@/utils/validation';
+import { notify } from '@/utils/notifications';
 
 type WithdrawFormProps = {
   isConnected: boolean;
@@ -23,6 +24,7 @@ export default function WithdrawForm({ isConnected, isSubmitting, onWithdraw }: 
     initialValues,
     onSubmit: async (data) => {
       await onWithdraw(data.amount);
+      notify.success("Withdrawal Successful", `You have withdrawn ${data.amount} tokens.`);
       reset();
     },
   });

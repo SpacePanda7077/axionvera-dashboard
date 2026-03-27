@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { notify } from "@/utils/notifications";
 
 import { createAxionveraVaultSdk, parsePositiveAmount } from "@/utils/contractHelpers";
 import { NETWORK } from "@/utils/networkConfig";
@@ -51,6 +52,7 @@ export function useVault({ walletAddress }: UseVaultArgs) {
       }));
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load vault state.";
+      notify.error("Vault Update Failed", message);
       setState((s) => ({ ...s, isLoading: false, error: message }));
     }
   }, [sdk, walletAddress]);
@@ -77,6 +79,7 @@ export function useVault({ walletAddress }: UseVaultArgs) {
         await refresh();
       } catch (e) {
         const message = e instanceof Error ? e.message : "Deposit failed.";
+        notify.error("Deposit Failed", message);
         setState((s) => ({ ...s, error: message }));
       } finally {
         setState((s) => ({ ...s, isSubmitting: false }));
@@ -103,6 +106,7 @@ export function useVault({ walletAddress }: UseVaultArgs) {
         await refresh();
       } catch (e) {
         const message = e instanceof Error ? e.message : "Withdraw failed.";
+        notify.error("Withdrawal Failed", message);
         setState((s) => ({ ...s, error: message }));
       } finally {
         setState((s) => ({ ...s, isSubmitting: false }));
@@ -123,6 +127,7 @@ export function useVault({ walletAddress }: UseVaultArgs) {
       await refresh();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Claim failed.";
+      notify.error("Claim Failed", message);
       setState((s) => ({ ...s, error: message }));
     } finally {
       setState((s) => ({ ...s, isClaiming: false }));

@@ -1,6 +1,7 @@
 import { FormInput } from './FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { profileSchema, ProfileFormData } from '@/utils/validation';
+import { notify } from '@/utils/notifications';
 
 interface ProfileFormProps {
   initialData?: Partial<ProfileFormData>;
@@ -25,7 +26,12 @@ export default function ProfileForm({ initialData, onSubmit }: ProfileFormProps)
   } = useFormValidation({
     schema: profileSchema,
     initialValues,
-    onSubmit,
+    onSubmit: async (data) => {
+      if (onSubmit) {
+        await onSubmit(data);
+        notify.success("Profile Updated", "Your profile information has been saved successfully.");
+      }
+    },
   });
 
   const firstNameProps = getFieldProps('firstName');
@@ -98,7 +104,7 @@ export default function ProfileForm({ initialData, onSubmit }: ProfileFormProps)
               <p className="text-xs text-slate-500">Optional: Brief description about yourself</p>
             )}
             <p className="text-xs text-slate-500">
-              {bioProps.value.length}/500
+              {(bioProps.value || '').length}/500
             </p>
           </div>
         </div>

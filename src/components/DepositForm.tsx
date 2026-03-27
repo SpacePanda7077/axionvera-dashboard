@@ -1,6 +1,7 @@
 import { FormInput } from './FormInput';
 import { useFormValidation } from '@/hooks/useFormValidation';
 import { depositSchema, DepositFormData } from '@/utils/validation';
+import { notify } from '@/utils/notifications';
 
 type DepositFormProps = {
   isConnected: boolean;
@@ -23,6 +24,7 @@ export default function DepositForm({ isConnected, isSubmitting, onDeposit }: De
     initialValues,
     onSubmit: async (data) => {
       await onDeposit(data.amount);
+      notify.success("Deposit Successful", `You have deposited ${data.amount} tokens.`);
       reset();
     },
   });

@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { notify } from '@/utils/notifications';
 
 export interface ApiErrorState {
   error: Error | null;
@@ -45,6 +46,7 @@ export function useApiError(): UseApiErrorReturn {
     } catch (error) {
       const errorObj = error as Error;
       console.error('API Error in hook:', errorObj);
+      notify.error('API Error', errorObj.message);
       setState({
         error: errorObj,
         isLoading: false,
