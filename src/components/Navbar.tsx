@@ -55,6 +55,9 @@ export default function Navbar({ address, isConnecting, onConnect, onDisconnect 
             <Link href="/dashboard" className="rounded-lg px-3 py-2 hover:bg-slate-900/60">
               Vault
             </Link>
+            <Link href="/profile" className="rounded-lg px-3 py-2 hover:bg-slate-900/60">
+              Profile
+            </Link>
             <a
               href="https://stellar.org/soroban"
               target="_blank"
@@ -129,6 +132,13 @@ export default function Navbar({ address, isConnecting, onConnect, onDisconnect 
               className="rounded-lg px-3 py-3 text-sm text-slate-200 hover:bg-slate-900/60"
             >
               Vault
+            </Link>
+            <Link
+              href="/profile"
+              onClick={() => setIsMenuOpen(false)}
+              className="rounded-lg px-3 py-3 text-sm text-slate-200 hover:bg-slate-900/60"
+            >
+              Profile
             </Link>
             <a
               href="https://stellar.org/soroban"
