@@ -1,5 +1,6 @@
+import { useMemo, useState } from "react";
 import { formatAmount, shortenAddress } from "@/utils/contractHelpers";
-import type { VaultTx } from "@/utils/contractHelpers";
+import type { VaultTx, VaultTxType, VaultTxStatus } from "@/utils/contractHelpers";
 import { TransactionSkeleton } from "./Skeletons";
 
 type TransactionHistoryProps = {
@@ -10,6 +11,23 @@ type TransactionHistoryProps = {
   onClaimRewards: () => Promise<void>;
   isClaiming: boolean;
 };
+
+type TypeFilter = "all" | VaultTxType;
+type StatusFilter = "all" | VaultTxStatus;
+
+const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: "all", label: "All Types" },
+  { value: "deposit", label: "Deposit" },
+  { value: "withdraw", label: "Withdraw" },
+  { value: "claim", label: "Claim" }
+];
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: "all", label: "All Statuses" },
+  { value: "success", label: "Success" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Failed" }
+];
 
 function statusStyles(status: VaultTx["status"]) {
   if (status === "success") return "border-emerald-900/50 bg-emerald-950/30 text-emerald-200";
@@ -23,6 +41,9 @@ function typeLabel(type: VaultTx["type"]) {
   return "Claim";
 }
 
+const selectClassName =
+  "rounded-lg border border-border-primary bg-background-secondary/30 px-3 py-1.5 text-xs text-text-primary outline-none transition hover:bg-background-secondary/60 focus:border-axion-500";
+
 export default function TransactionHistory({
   isConnected,
   address,
@@ -31,6 +52,19 @@ export default function TransactionHistory({
   onClaimRewards,
   isClaiming
 }: TransactionHistoryProps) {
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter((tx) => {
+      if (typeFilter !== "all" && tx.type !== typeFilter) return false;
+      if (statusFilter !== "all" && tx.status !== statusFilter) return false;
+      return true;
+    });
+  }, [transactions, typeFilter, statusFilter]);
+
+  const hasActiveFilter = typeFilter !== "all" || statusFilter !== "all";
+
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -51,6 +85,49 @@ export default function TransactionHistory({
         </button>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label className="flex items-center gap-2 text-xs text-text-muted">
+          Type
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+            className={selectClassName}
+          >
+            {TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs text-text-muted">
+          Status
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className={selectClassName}
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {hasActiveFilter ? (
+          <button
+            type="button"
+            onClick={() => {
+              setTypeFilter("all");
+              setStatusFilter("all");
+            }}
+            className="text-xs text-axion-400 transition hover:text-axion-300"
+          >
+            Clear filters
+          </button>
+        ) : null}
+      </div>
+
       <div className="mt-5 overflow-hidden rounded-2xl border border-border-primary">
         <div className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary">
           <div>Type</div>
@@ -61,10 +138,12 @@ export default function TransactionHistory({
         <div className="divide-y divide-border-primary">
           {isLoading ? (
             <TransactionSkeleton />
-          ) : transactions.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-text-secondary">No transactions yet.</div>
+          ) : filteredTransactions.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-text-secondary">
+              {hasActiveFilter ? "No transactions match the selected filters." : "No transactions yet."}
+            </div>
           ) : (
-            transactions.map((tx) => (
+            filteredTransactions.map((tx) => (
               <div
                 key={tx.id}
                 className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] items-center gap-3 px-4 py-3 text-sm"
@@ -85,6 +164,12 @@ export default function TransactionHistory({
           )}
         </div>
       </div>
+
+      {hasActiveFilter && !isLoading && filteredTransactions.length > 0 ? (
+        <div className="mt-3 text-xs text-text-muted">
+          Showing {filteredTransactions.length} of {transactions.length} transactions
+        </div>
+      ) : null}
     </section>
   );
 }
