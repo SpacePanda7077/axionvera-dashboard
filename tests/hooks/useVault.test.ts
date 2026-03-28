@@ -10,12 +10,15 @@ describe("useVault", () => {
     expect(result.current.balance).toBe("0");
 
     await act(async () => {
-      await result.current.deposit("10");
+      void result.current.deposit("10");
     });
 
+    await waitFor(() => expect(result.current.depositStatus).toBe("pending"));
     await waitFor(() => expect(result.current.isSubmitting).toBe(false));
     expect(Number(result.current.balance)).toBeGreaterThanOrEqual(10);
     expect(result.current.transactions[0]?.type).toBe("deposit");
+    expect(result.current.depositStatus).toBe("success");
+    expect(result.current.depositHash).toMatch(/^SIM-/);
   });
 
   test("withdraw reduces balance", async () => {

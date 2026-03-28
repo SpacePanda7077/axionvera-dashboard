@@ -52,6 +52,17 @@ export default function DashboardPage() {
                     isConnected={wallet.isConnected}
                     isSubmitting={vault.isSubmitting}
                     onDeposit={vault.deposit}
+                    status={vault.depositStatus}
+                    statusMessage={
+                      vault.depositStatus === "pending"
+                        ? `Depositing ${vault.lastDepositAmount ?? "0"} tokens into the vault.`
+                        : vault.depositStatus === "success"
+                          ? `Successfully deposited ${vault.lastDepositAmount ?? "0"} tokens.`
+                          : vault.depositStatus === "error"
+                            ? vault.depositError
+                            : null
+                    }
+                    transactionHash={vault.depositHash}
                   />
                   <WithdrawForm
                     isConnected={wallet.isConnected}
