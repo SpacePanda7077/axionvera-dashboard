@@ -17,6 +17,10 @@ type VaultState = {
   isSubmitting: boolean;
   isClaiming: boolean;
   error: string | null;
+  depositStatus: "idle" | "pending" | "success" | "error";
+  depositHash: string | null;
+  lastDepositAmount: string | null;
+  depositError: string | null;
 };
 
 export function useVault({ walletAddress }: UseVaultArgs) {
@@ -28,7 +32,11 @@ export function useVault({ walletAddress }: UseVaultArgs) {
     isLoading: false,
     isSubmitting: false,
     isClaiming: false,
-    error: null
+    error: null,
+    depositStatus: "idle",
+    depositHash: null,
+    lastDepositAmount: null,
+    depositError: null
   });
 
   const refresh = useCallback(async () => {
@@ -65,22 +73,69 @@ export function useVault({ walletAddress }: UseVaultArgs) {
     async (amountInput: string) => {
       const amount = parsePositiveAmount(amountInput);
       if (!walletAddress) {
-        setState((s) => ({ ...s, error: "Connect a wallet to deposit." }));
+        setState((s) => ({
+          ...s,
+          error: "Connect a wallet to deposit.",
+          depositStatus: "error",
+          depositError: "Connect a wallet to deposit.",
+          depositHash: null
+        }));
         return;
       }
       if (!amount) {
-        setState((s) => ({ ...s, error: "Enter a valid amount greater than zero." }));
+        setState((s) => ({
+          ...s,
+          error: "Enter a valid amount greater than zero.",
+          depositStatus: "error",
+          depositError: "Enter a valid amount greater than zero.",
+          depositHash: null
+        }));
         return;
       }
 
-      setState((s) => ({ ...s, isSubmitting: true, error: null }));
+      const pendingTx: VaultTx = {
+        id: `pending-${Date.now()}`,
+        type: "deposit",
+        amount,
+        status: "pending",
+        createdAt: new Date().toISOString()
+      };
+
+      setState((s) => ({
+        ...s,
+        isSubmitting: true,
+        error: null,
+        depositStatus: "pending",
+        depositHash: null,
+        depositError: null,
+        lastDepositAmount: amount,
+        transactions: [pendingTx, ...s.transactions.filter((tx) => tx.id !== pendingTx.id)].slice(0, 25)
+      }));
       try {
-        await sdk.deposit({ walletAddress, network: NETWORK, amount });
+        const tx = await sdk.deposit({ walletAddress, network: NETWORK, amount });
         await refresh();
+        setState((s) => ({
+          ...s,
+          depositStatus: "success",
+          depositHash: tx.hash ?? null,
+          depositError: null,
+          lastDepositAmount: amount
+        }));
       } catch (e) {
         const message = e instanceof Error ? e.message : "Deposit failed.";
         notify.error("Deposit Failed", message);
-        setState((s) => ({ ...s, error: message }));
+        setState((s) => ({
+          ...s,
+          error: message,
+          depositStatus: "error",
+          depositError: message,
+          depositHash: null,
+          lastDepositAmount: amount,
+          transactions: [
+            { ...pendingTx, status: "failed" as const },
+            ...s.transactions.filter((tx) => tx.id !== pendingTx.id)
+          ].slice(0, 25)
+        }));
       } finally {
         setState((s) => ({ ...s, isSubmitting: false }));
       }
@@ -142,6 +197,10 @@ export function useVault({ walletAddress }: UseVaultArgs) {
     isSubmitting: state.isSubmitting,
     isClaiming: state.isClaiming,
     error: state.error,
+    depositStatus: state.depositStatus,
+    depositHash: state.depositHash,
+    lastDepositAmount: state.lastDepositAmount,
+    depositError: state.depositError,
     refresh,
     deposit,
     withdraw,

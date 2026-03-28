@@ -12,6 +12,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
   ({ label, error, touched, helperText, className = '', ...props }, ref) => {
     const hasError = error?.hasError && touched;
     const showError = hasError && error?.message;
+    const { onChange, ...inputProps } = props;
 
     return (
       <div className="flex flex-col gap-2">
@@ -38,7 +39,8 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             }
             ${className}
           `}
-          {...props}
+          {...inputProps}
+          onChange={(event) => onChange?.(event.target.value as never)}
         />
         
         <div className="min-h-[1.25rem]">
