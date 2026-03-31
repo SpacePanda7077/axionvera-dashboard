@@ -160,7 +160,7 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
                   /[^A-Za-z0-9]/.test(values.newPassword || '') ? 'bg-green-500' : 'bg-slate-700'
                 }`} />
               </div>
-              <div className="grid grid-cols-5 gap-2 text-xs text-slate-500">
+              <div className="grid grid-cols-5 gap-2 text-xs text-slate-400 dark:text-slate-500 transition-colors">
                 <span>8+ chars</span>
                 <span>Upper</span>
                 <span>Lower</span>

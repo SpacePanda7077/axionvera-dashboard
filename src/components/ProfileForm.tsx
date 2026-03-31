@@ -99,9 +99,9 @@ export default function ProfileForm({ initialData, onSubmit }: ProfileFormProps)
           />
           <div className="mt-1 flex justify-between">
             {bioProps.error?.hasError && bioProps.touched ? (
-              <p className="text-xs text-red-400">{bioProps.error.message}</p>
+              <p className="text-xs text-red-500 dark:text-red-400">{bioProps.error.message}</p>
             ) : (
-              <p className="text-xs text-slate-500">Optional: Brief description about yourself</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors">Optional: Brief description about yourself</p>
             )}
             <p className="text-xs text-slate-500">
               {(bioProps.value || '').length}/500

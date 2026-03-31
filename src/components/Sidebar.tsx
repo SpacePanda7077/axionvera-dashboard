@@ -35,7 +35,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
       {/* Mobile backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={close}
           aria-hidden="true"
         />
@@ -90,7 +90,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                       rel="noreferrer"
                       className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-text-secondary transition hover:bg-background-secondary/60 hover:text-text-primary"
                     >
-                      {item.icon}
+                      <span className="text-slate-400 group-hover:text-axion-500 transition-colors">{item.icon}</span>
                       <span>{item.label}</span>
                     </a>
                   ) : (
@@ -99,7 +99,7 @@ export default function Sidebar({ className = "" }: SidebarProps) {
                       onClick={close}
                       className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-text-secondary transition hover:bg-background-secondary/60 hover:text-text-primary"
                     >
-                      {item.icon}
+                      <span className="text-slate-400 group-hover:text-axion-500 transition-colors">{item.icon}</span>
                       <span>{item.label}</span>
                     </Link>
                   )}

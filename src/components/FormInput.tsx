@@ -6,10 +6,11 @@ interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: FormFieldError;
   touched?: boolean;
   helperText?: string;
+  children?: React.ReactNode;
 }
 
 export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
-  ({ label, error, touched, helperText, className = '', ...props }, ref) => {
+  ({ label, error, touched, helperText, children, className = '', ...props }, ref) => {
     const hasError = error?.hasError && touched;
     const showError = hasError && error?.message;
     const { onChange, ...inputProps } = props;
@@ -24,7 +25,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
             }`}
           >
             {label}
-            {props.required && <span className="text-red-400 ml-1">*</span>}
+            {props.required && <span className="text-red-500 dark:text-red-400 ml-1">*</span>}
           </label>
         )}
         
@@ -45,7 +46,7 @@ export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
         
         <div className="min-h-[1.25rem]">
           {showError ? (
-            <p className="text-xs text-red-400">{error.message}</p>
+            <p className="text-xs text-red-500 dark:text-red-400">{error.message}</p>
           ) : helperText && !touched ? (
             <p className="text-xs text-text-muted">{helperText}</p>
           ) : null}

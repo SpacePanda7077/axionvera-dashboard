@@ -152,7 +152,7 @@ export default function TransactionHistory({
                 <div className="text-text-primary">{formatAmount(tx.amount)}</div>
                 <div className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</div>
                 <div>
-                  <span className={`inline-flex items-center rounded-full border px-2 py-1 text-xs capitalize ${statusStyles(tx.status)}`}>
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusStyles(tx.status)}`}>
                     {tx.status}
                   </span>
                   {tx.hash ? (

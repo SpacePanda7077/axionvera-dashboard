@@ -53,7 +53,7 @@ export default function BalanceCard({
           <div className="mt-1 text-xs text-text-muted">Claim rewards to add them to your balance.</div>
         </div>
         {error ? (
-          <div className="rounded-2xl border border-rose-900/50 bg-rose-950/30 p-4 text-sm text-rose-200">
+          <div className="rounded-2xl border border-rose-200/50 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-200">
             {error}
           </div>
         ) : null}
