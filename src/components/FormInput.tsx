@@ -1,11 +1,11 @@
 import { forwardRef } from 'react';
 import { FormFieldError } from '@/hooks/useFormValidation';
 
-interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+export interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string | React.ReactNode;
   error?: FormFieldError;
   touched?: boolean;
-  helperText?: string;
+  helperText?: React.ReactNode;
   children?: React.ReactNode;
 }
 
