@@ -27,6 +27,7 @@ export default function WithdrawForm({
   statusMessage,
   transactionHash
 }: WithdrawFormProps) {
+
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
 
@@ -35,8 +36,7 @@ export default function WithdrawForm({
   };
 
   const {
-    getFieldProps,
-    shouldDisableSubmit,
+    register,
     handleSubmit,
     reset,
   } = useFormValidation({

@@ -7,6 +7,8 @@ import { useFormValidation } from '@/hooks/useFormValidation';
 import { depositSchema, DepositFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
 import { shortenAddress } from '@/utils/contractHelpers';
+import { AppTooltip } from './AppTooltip';
+import { GLOSSARY } from '@/utils/glossary';
 
 type DepositFormProps = {
   isConnected: boolean;
@@ -15,7 +17,10 @@ type DepositFormProps = {
   status: "idle" | "pending" | "success" | "error";
   statusMessage?: string | null;
   transactionHash?: string | null;
+  walletBalance?: number | null;
 };
+
+const NETWORK_FEE_RESERVE = 0.1;
 
 export default function DepositForm({
   isConnected,
@@ -23,7 +28,8 @@ export default function DepositForm({
   onDeposit,
   status,
   statusMessage,
-  transactionHash
+  transactionHash,
+  walletBalance,
 }: DepositFormProps) {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [depositAmount, setDepositAmount] = useState('');
@@ -33,8 +39,7 @@ export default function DepositForm({
   };
 
   const {
-    getFieldProps,
-    shouldDisableSubmit,
+    register,
     handleSubmit,
     reset,
   } = useFormValidation({
