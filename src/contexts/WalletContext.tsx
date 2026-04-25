@@ -220,7 +220,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             "Freighter wallet not detected. Please install the Freighter extension.",
           );
         await freighter.setAllowed();
-        const address = await freighter.getPublicKey();
+        address = await freighter.getPublicKey();
         const network = await freighter.getNetwork();
 
         const networkMap: Record<string, StellarNetwork> = {
@@ -254,6 +254,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           walletType: "albedo",
         });
       }
+
+      setState({ address, network: mappedNetwork, balance: null, isConnecting: false, error: null, walletType });
+      notify.success('Wallet Connected', `Successfully connected to ${walletType} wallet.`);
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "Failed to connect wallet.";

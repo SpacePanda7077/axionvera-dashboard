@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { FormFieldError } from '@/hooks/useFormValidation';
+import { FieldError } from 'react-hook-form';
 
 export interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string | React.ReactNode;
@@ -10,17 +10,16 @@ export interface FormInputProps extends React.InputHTMLAttributes<HTMLInputEleme
 }
 
 export const FormInput = forwardRef<HTMLInputElement, FormInputProps>(
-  ({ label, error, touched, helperText, children, className = '', ...props }, ref) => {
-    const hasError = error?.hasError && touched;
-    const showError = hasError && error?.message;
-    const { onChange, ...inputProps } = props;
+  ({ label, error, helperText, children, className = '', ...props }, ref) => {
+    const hasError = !!error;
+    const errorMessage = error?.message;
 
     const inputId = props.id || `input-${label?.toLowerCase().replace(/\s+/g, '-')}`;
     const errorId = `${inputId}-error`;
     const helperId = `${inputId}-helper`;
 
     return (
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 w-full">
         {label && (
           <label 
             htmlFor={inputId}

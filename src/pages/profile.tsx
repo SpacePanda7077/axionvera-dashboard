@@ -25,14 +25,12 @@ export default function ProfilePage() {
     console.log('Profile data:', data);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    alert('Profile updated successfully!');
   };
 
   const handleSecuritySubmit = async (data: SecuritySettingsFormData) => {
     console.log('Security data:', data);
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
-    alert('Security settings updated successfully!');
   };
 
   return (

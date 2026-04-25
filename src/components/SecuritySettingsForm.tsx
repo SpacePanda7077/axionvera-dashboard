@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
-import { useFormValidation } from '@/hooks/useFormValidation';
 import { securitySettingsSchema, SecuritySettingsFormData } from '@/utils/validation';
 
 interface SecuritySettingsFormProps {
@@ -21,22 +22,18 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
   };
 
   const {
-    getFieldProps,
-    shouldDisableSubmit,
-    isSubmitting,
+    register,
     handleSubmit,
-    values,
-  } = useFormValidation({
-    schema: securitySettingsSchema,
-    initialValues,
-    onSubmit,
+    watch,
+    formState: { errors, isDirty, isValid, isSubmitting }
+  } = useForm<SecuritySettingsFormData>({
+    resolver: zodResolver(securitySettingsSchema),
+    mode: 'onChange',
+    defaultValues: initialValues,
   });
 
-  const currentPasswordProps = getFieldProps('currentPassword');
-  const newPasswordProps = getFieldProps('newPassword');
-  const confirmPasswordProps = getFieldProps('confirmPassword');
-
-  const hasNewPassword = !!values.newPassword && values.newPassword.length > 0;
+  const newPassword = watch('newPassword') || '';
+  const hasNewPassword = newPassword.length > 0;
 
   return (
     <div className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
@@ -47,16 +44,17 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
         </p>
       </div>
 
-      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit || (() => {}))} className="space-y-6">
         <div>
           <h3 className="text-sm font-medium text-text-primary mb-4">Change Password</h3>
           
           <FormInput
-            {...currentPasswordProps}
+            {...register('currentPassword')}
             id="currentPassword"
             type={showPasswords.current ? 'text' : 'password'}
             label="Current Password"
             required
+            error={errors.currentPassword}
           >
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
               <button
@@ -73,7 +71,7 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
                 ) : (
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 )}
               </button>
@@ -81,11 +79,12 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
           </FormInput>
 
           <FormInput
-            {...newPasswordProps}
+            {...register('newPassword')}
             id="newPassword"
             type={showPasswords.new ? 'text' : 'password'}
             label="New Password"
             required={hasNewPassword}
+            error={errors.newPassword}
             helperText={!hasNewPassword ? "Leave blank to keep current password" : "Must be at least 8 characters with uppercase, lowercase, number, and special character"}
           >
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -103,7 +102,7 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
                 ) : (
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 )}
               </button>
@@ -111,11 +110,12 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
           </FormInput>
 
           <FormInput
-            {...confirmPasswordProps}
+            {...register('confirmPassword')}
             id="confirmPassword"
             type={showPasswords.confirm ? 'text' : 'password'}
             label="Confirm New Password"
             required={hasNewPassword}
+            error={errors.confirmPassword}
             helperText={!hasNewPassword ? "Leave blank if not changing password" : "Re-enter your new password to confirm"}
           >
             <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -133,7 +133,7 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
                 ) : (
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268-2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                   </svg>
                 )}
               </button>
@@ -154,19 +154,19 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
                 /[^A-Za-z0-9]/.test(values.newPassword || '')
               ].filter(Boolean).length} aria-label="Password strength">
                 <div className={`h-1 flex-1 rounded-full ${
-                  (values.newPassword || '').length >= 8 ? 'bg-green-500' : 'bg-slate-700'
+                  newPassword.length >= 8 ? 'bg-green-500' : 'bg-slate-700'
                 }`} />
                 <div className={`h-1 flex-1 rounded-full ${
-                  /[A-Z]/.test(values.newPassword || '') ? 'bg-green-500' : 'bg-slate-700'
+                  /[A-Z]/.test(newPassword) ? 'bg-green-500' : 'bg-slate-700'
                 }`} />
                 <div className={`h-1 flex-1 rounded-full ${
-                  /[a-z]/.test(values.newPassword || '') ? 'bg-green-500' : 'bg-slate-700'
+                  /[a-z]/.test(newPassword) ? 'bg-green-500' : 'bg-slate-700'
                 }`} />
                 <div className={`h-1 flex-1 rounded-full ${
-                  /[0-9]/.test(values.newPassword || '') ? 'bg-green-500' : 'bg-slate-700'
+                  /[0-9]/.test(newPassword) ? 'bg-green-500' : 'bg-slate-700'
                 }`} />
                 <div className={`h-1 flex-1 rounded-full ${
-                  /[^A-Za-z0-9]/.test(values.newPassword || '') ? 'bg-green-500' : 'bg-slate-700'
+                  /[^A-Za-z0-9]/.test(newPassword) ? 'bg-green-500' : 'bg-slate-700'
                 }`} />
               </div>
               <div className="grid grid-cols-5 gap-2 text-xs text-slate-400 dark:text-slate-500 transition-colors">

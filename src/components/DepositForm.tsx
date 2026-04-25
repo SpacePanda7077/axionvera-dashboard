@@ -1,5 +1,6 @@
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
-import { useFormValidation } from '@/hooks/useFormValidation';
 import { depositSchema, DepositFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
 import { shortenAddress } from '@/utils/contractHelpers';
@@ -23,35 +24,39 @@ export default function DepositForm({
   statusMessage,
   transactionHash
 }: DepositFormProps) {
-  const initialValues: DepositFormData = {
-    amount: '',
-  };
-
   const {
-    getFieldProps,
-    shouldDisableSubmit,
+    register,
     handleSubmit,
     reset,
-  } = useFormValidation({
-    schema: depositSchema,
-    initialValues,
-    onSubmit: async (data) => {
-      await onDeposit(data.amount);
-      notify.success("Deposit Successful", `You have deposited ${data.amount} tokens.`);
-      reset();
-    },
+    formState: { errors, isValid, isDirty }
+  } = useForm<DepositFormData>({
+    resolver: zodResolver(depositSchema),
+    mode: 'onChange',
+    defaultValues: {
+      amount: '' as any,
+    }
   });
 
-  const amountProps = getFieldProps('amount');
+  const onSubmit = async (data: DepositFormData) => {
+    try {
+      await onDeposit(data.amount.toString());
+      notify.success("Deposit Successful", `You have deposited ${data.amount} tokens.`);
+      reset();
+    } catch (error) {
+      console.error('Deposit error:', error);
+    }
+  };
+
+  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting;
 
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
       <div className="text-sm font-semibold text-text-primary">Deposit</div>
       <div className="mt-1 text-xs text-text-muted">Deposit tokens into the Axionvera vault.</div>
 
-      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="mt-5 space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-4">
         <FormInput
-          {...amountProps}
+          {...register('amount')}
           id="deposit-amount"
           inputMode="decimal"
           placeholder="0.0"
@@ -93,7 +98,7 @@ export default function DepositForm({
 
         <button
           type="submit"
-          disabled={!isConnected || shouldDisableSubmit() || isSubmitting}
+          disabled={shouldDisableSubmit}
           aria-label={isSubmitting ? "Submitting deposit" : "Deposit tokens"}
           className="w-full rounded-xl bg-axion-500 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-axion-500/20 transition hover:bg-axion-400 disabled:cursor-not-allowed disabled:opacity-70"
         >
