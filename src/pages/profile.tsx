@@ -9,6 +9,9 @@ import { useSidebar } from "@/hooks/useSidebar";
 import { useWalletContext } from "@/hooks/useWallet";
 import { ProfileFormData, SecuritySettingsFormData } from "@/utils/validation";
 import { useEffect } from "react";
+import WalletAvatar from "@/components/WalletAvatar";
+import { shortenAddress } from "@/utils/contractHelpers";
+import CopyButton from "@/components/CopyButton";
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
@@ -53,6 +56,23 @@ export default function ProfilePage() {
                 Manage your account settings and preferences.
               </p>
             </div>
+
+            {/* Wallet Info */}
+            {wallet.publicKey && (
+              <div className="mb-8 rounded-2xl border border-border-primary bg-background-primary/30 p-6">
+                <h2 className="text-lg font-semibold text-text-primary mb-4">Wallet Information</h2>
+                <div className="flex items-center gap-3">
+                  <WalletAvatar publicKey={wallet.publicKey} size={40} />
+                  <div>
+                    <p className="text-sm font-medium text-text-primary">
+                      {shortenAddress(wallet.publicKey, 8)}
+                    </p>
+                    <p className="text-xs text-text-muted">Connected Wallet</p>
+                  </div>
+                  <CopyButton text={wallet.publicKey} label="Copy full address" />
+                </div>
+              </div>
+            )}
 
             {/* Tab Navigation */}
             <div className="mb-8 border-b border-border-primary">
