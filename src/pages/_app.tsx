@@ -12,6 +12,29 @@ import { inter, jetbrainsMono } from "@/lib/fonts";
 import { useEffect } from "react";
 import { initTelemetry } from "@/utils/telemetry";
 
+// Import the correct ThemeProvider - choose one based on your needs
+// Option 1: If you want to use next-themes for theme switching
+// Option 2: If you want to use your custom ThemeContext
+
+// For this fix, I'll assume you want to use both:
+// - next-themes for the main theme management
+// - Your custom ThemeContext for additional theme logic
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <NextThemeProvider
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <AppThemeProvider>
+        {children}
+      </AppThemeProvider>
+    </NextThemeProvider>
+  );
+}
+
 export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     initTelemetry();
