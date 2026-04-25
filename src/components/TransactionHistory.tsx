@@ -15,6 +15,8 @@ type TransactionHistoryProps = {
 
 type TypeFilter = "all" | VaultTxType;
 type StatusFilter = "all" | VaultTxStatus;
+type SortKey = "createdAt" | "amount";
+type SortDirection = "asc" | "desc";
 
 const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All Types" },
@@ -42,6 +44,11 @@ function typeLabel(type: VaultTx["type"]) {
   return "Claim";
 }
 
+function sortIcon(active: boolean, direction: SortDirection) {
+  if (!active) return "↕";
+  return direction === "asc" ? "↑" : "↓";
+}
+
 const selectClassName =
   "rounded-lg border border-border-primary bg-background-secondary/30 px-3 py-1.5 text-xs text-text-primary outline-none transition hover:bg-background-secondary/60 focus:border-axion-500";
 
@@ -55,6 +62,8 @@ export default function TransactionHistory({
 }: TransactionHistoryProps) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -64,7 +73,33 @@ export default function TransactionHistory({
     });
   }, [transactions, typeFilter, statusFilter]);
 
+  const sortedTransactions = useMemo(() => {
+    const sorted = [...filteredTransactions];
+    sorted.sort((a, b) => {
+      const directionFactor = sortDirection === "asc" ? 1 : -1;
+
+      if (sortKey === "amount") {
+        return (Number(a.amount) - Number(b.amount)) * directionFactor;
+      }
+
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return (dateA - dateB) * directionFactor;
+    });
+    return sorted;
+  }, [filteredTransactions, sortKey, sortDirection]);
+
   const hasActiveFilter = typeFilter !== "all" || statusFilter !== "all";
+
+  const toggleSort = (nextKey: SortKey) => {
+    if (sortKey === nextKey) {
+      setSortDirection((previousDirection) => (previousDirection === "asc" ? "desc" : "asc"));
+      return;
+    }
+
+    setSortKey(nextKey);
+    setSortDirection("desc");
+  };
 
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
@@ -171,7 +206,16 @@ export default function TransactionHistory({
                     </div>
                   ) : null}
                 </div>
-              </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-text-muted">Amount</span>
+                  <span className="text-text-primary">{formatAmount(tx.amount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-text-muted">Date</span>
+                  <span className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</span>
+                </div>
+                {tx.hash ? <div className="text-xs text-text-muted">Hash: {shortenAddress(tx.hash, 8)}</div> : null}
+              </article>
             ))
           )}
         </div>
