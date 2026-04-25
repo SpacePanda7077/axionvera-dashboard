@@ -94,7 +94,9 @@ export default function TransactionHistory({
 
   const toggleSort = (nextKey: SortKey) => {
     if (sortKey === nextKey) {
-      setSortDirection((previousDirection) => (previousDirection === "asc" ? "desc" : "asc"));
+      setSortDirection((previousDirection) =>
+        previousDirection === "asc" ? "desc" : "asc"
+      );
       return;
     }
 
@@ -108,7 +110,9 @@ export default function TransactionHistory({
         <div>
           <div className="text-sm font-semibold text-text-primary">Transaction history</div>
           <div className="mt-1 text-xs text-text-muted">
-            {isConnected && publicKey ? `Recent vault activity for ${shortenAddress(publicKey, 6)}` : "Connect a wallet to view history."}
+            {isConnected && publicKey
+              ? `Recent vault activity for ${shortenAddress(publicKey, 6)}`
+              : "Connect a wallet to view history."}
           </div>
         </div>
         <button
@@ -130,15 +134,13 @@ export default function TransactionHistory({
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
             className={selectClassName}
-            aria-label="Filter transactions by type"
           >
             {TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
+
         <div className="flex items-center gap-2">
           <label htmlFor="status-filter" className="text-xs text-text-muted">Status</label>
           <select
@@ -146,88 +148,50 @@ export default function TransactionHistory({
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             className={selectClassName}
-            aria-label="Filter transactions by status"
           >
             {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
-        {hasActiveFilter ? (
-          <button
-            type="button"
-            onClick={() => {
-              setTypeFilter("all");
-              setStatusFilter("all");
-            }}
-            aria-label="Clear all transaction filters"
-            className="text-xs text-axion-400 transition hover:text-axion-300 focus:outline-none focus:underline"
-          >
-            Clear filters
-          </button>
-        ) : null}
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-border-primary" role="table" aria-label="Transaction History">
-        <div className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary font-semibold" role="row">
-          <div role="columnheader">Type</div>
-          <div role="columnheader">Amount</div>
-          <div role="columnheader">Created</div>
-          <div role="columnheader">Status</div>
-        </div>
-        <div className="divide-y divide-border-primary" role="rowgroup">
+      <div className="mt-5 overflow-hidden rounded-2xl border border-border-primary">
+        <div className="divide-y divide-border-primary">
           {isLoading ? (
             <TransactionSkeleton />
           ) : filteredTransactions.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-text-secondary" role="row">
-              <div role="cell" className="col-span-4">
-                {hasActiveFilter ? "No transactions match the selected filters." : "No transactions yet."}
-              </div>
+            <div className="px-4 py-6 text-sm text-text-secondary">
+              No transactions yet.
             </div>
           ) : (
             filteredTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] items-center gap-3 px-4 py-3 text-sm"
-                role="row"
-              >
-                <div className="text-text-primary" role="cell">{typeLabel(tx.type)}</div>
-                <div className="text-text-primary" role="cell">{formatAmount(tx.amount)}</div>
-                <div className="text-text-muted" role="cell">{new Date(tx.createdAt).toLocaleString()}</div>
-                <div role="cell">
-                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusStyles(tx.status)}`}>
-                    {tx.status}
-                  </span>
-                  {tx.hash ? (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-text-muted">
-                      <span>Hash: {shortenAddress(tx.hash, 8)}</span>
-                      <CopyButton text={tx.hash} label="Copy hash" size="sm" />
-                    </div>
-                  ) : null}
-                </div>
+              <div key={tx.id} className="p-4 text-sm border-b">
+                <div>{typeLabel(tx.type)}</div>
+                <div>{formatAmount(tx.amount)}</div>
+                <div>{new Date(tx.createdAt).toLocaleString()}</div>
+                <div>{tx.status}</div>
+
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="text-text-muted">Amount</span>
                   <span className="text-text-primary">{formatAmount(tx.amount)}</span>
                 </div>
+
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="text-text-muted">Date</span>
                   <span className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</span>
                 </div>
-                {tx.hash ? <div className="text-xs text-text-muted">Hash: {shortenAddress(tx.hash, 8)}</div> : null}
+
+                {tx.hash && (
+                  <div className="text-xs text-text-muted">
+                    Hash: {shortenAddress(tx.hash, 8)}
+                  </div>
+                )}
               </div>
-              </article>
             ))
           )}
         </div>
       </div>
-
-      {hasActiveFilter && !isLoading && filteredTransactions.length > 0 ? (
-        <div className="mt-3 text-xs text-text-muted">
-          Showing {filteredTransactions.length} of {transactions.length} transactions
-        </div>
-      ) : null}
     </section>
   );
 }
