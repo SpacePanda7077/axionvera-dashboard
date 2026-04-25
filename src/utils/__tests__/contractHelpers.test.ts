@@ -1,9 +1,4 @@
-import {
-  shortenAddress,
-  formatAmount,
-  parsePositiveAmount,
-  createAxionveraVaultSdk,
-} from '../contractHelpers';
+import { parsePositiveAmount, createAxionveraVaultSdk } from '../contractHelpers';
 
 // Mock apiResilience to bypass sleep/timeout logic
 jest.mock('../apiResilience', () => ({
@@ -18,30 +13,6 @@ jest.mock('../networkConfig', () => ({
 }));
 
 describe('contractHelpers utility', () => {
-  describe('shortenAddress', () => {
-    it('should shorten address', () => {
-      expect(shortenAddress('GABC123456789XYZ', 3)).toBe('GAB...XYZ');
-    });
-
-    it('should return empty string for no address', () => {
-      expect(shortenAddress('')).toBe('');
-    });
-
-    it('should return original if short enough', () => {
-      expect(shortenAddress('ABC', 6)).toBe('ABC');
-    });
-  });
-
-  describe('formatAmount', () => {
-    it('should format numbers', () => {
-      expect(formatAmount('1000')).toBe('1,000');
-    });
-
-    it('should return original if not a number', () => {
-      expect(formatAmount('abc')).toBe('abc');
-    });
-  });
-
   describe('parsePositiveAmount', () => {
     it('should parse valid positive amounts', () => {
       expect(parsePositiveAmount('10.5')).toBe('10.5');
@@ -59,28 +30,40 @@ describe('contractHelpers utility', () => {
     const mockStorage: Record<string, string> = {};
 
     beforeAll(() => {
-      if (typeof global.window === 'undefined') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (global as any).window = {};
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const win = global.window as any;
-      win.localStorage = {
+      // Mock window and localStorage globally for this test suite
+      const mockLocalStorage = {
         getItem: jest.fn((key: string) => mockStorage[key] || null),
         setItem: jest.fn((key: string, val: string) => {
           mockStorage[key] = val;
         }),
+        removeItem: jest.fn((key: string) => {
+          delete mockStorage[key];
+        }),
+        clear: jest.fn(() => {
+          Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+        }),
       };
+
+      if (typeof window === 'undefined') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (global as any).window = { localStorage: mockLocalStorage } as unknown as Window &
+          typeof globalThis;
+      } else {
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true,
+        });
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (global as any).crypto = {
         randomUUID: () => 'test-uuid',
-      };
+      } as unknown as Crypto;
     });
 
     beforeEach(() => {
       sdk = createAxionveraVaultSdk();
+      // Clear mockStorage manually
       Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
     });
 
@@ -99,7 +82,8 @@ describe('contractHelpers utility', () => {
     });
 
     it('should withdraw (mocked)', async () => {
-      mockStorage['axionvera:vault:testnet:G_WIT'] = JSON.stringify({
+      const key = 'axionvera:vault:testnet:G_WIT';
+      mockStorage[key] = JSON.stringify({
         balance: '100',
         rewards: '0',
         txs: [],
@@ -113,7 +97,8 @@ describe('contractHelpers utility', () => {
     });
 
     it('should claim rewards (mocked)', async () => {
-      mockStorage['axionvera:vault:testnet:G_CLA'] = JSON.stringify({
+      const key = 'axionvera:vault:testnet:G_CLA';
+      mockStorage[key] = JSON.stringify({
         balance: '100',
         rewards: '10',
         txs: [],
@@ -134,7 +119,8 @@ describe('contractHelpers utility', () => {
     });
 
     it('should handle malformed storage gracefully', async () => {
-      mockStorage['axionvera:vault:testnet:G_MAL'] = 'invalid-json';
+      const key = 'axionvera:vault:testnet:G_MAL';
+      mockStorage[key] = 'invalid-json';
       const balances = await sdk.getBalances({ walletAddress: 'G_MAL', network: 'testnet' });
       expect(balances.balance).toBe('0');
     });

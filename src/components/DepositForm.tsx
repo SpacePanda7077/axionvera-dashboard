@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
 import { depositSchema, DepositFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
-import { shortenAddress } from '@/utils/contractHelpers';
+import { truncateAddress } from '@/utils/formatters';
 import { AppTooltip } from './AppTooltip';
 import { GLOSSARY } from '@/utils/glossary';
 
@@ -97,7 +97,7 @@ export default function DepositForm({
             {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
             {transactionHash ? (
               <div className="mt-1 text-xs opacity-80">
-                Tx: {shortenAddress(transactionHash, 8)}
+                Tx: {truncateAddress(transactionHash, 8, 8)}
               </div>
             ) : null}
           </div>

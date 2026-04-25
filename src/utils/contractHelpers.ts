@@ -42,18 +42,6 @@ export type AxionveraVaultSdk = {
   ) => Promise<VaultTx>;
 };
 
-export function shortenAddress(address: string, chars = 6) {
-  if (!address) return '';
-  if (address.length <= chars * 2 + 3) return address;
-  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
-}
-
-export function formatAmount(amount: string) {
-  const n = Number(amount);
-  if (!Number.isFinite(n)) return amount;
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 7 }).format(n);
-}
-
 export function parsePositiveAmount(input: string) {
   const trimmed = input.trim();
   const value = Number(trimmed);

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { formatAmount, shortenAddress } from '@/utils/contractHelpers';
+import { formatBalance, truncateAddress } from '@/utils/formatters';
 import type { VaultTx, VaultTxType, VaultTxStatus } from '@/utils/contractHelpers';
 import CopyButton from './CopyButton';
 import { TransactionSkeleton } from './Skeletons';
@@ -73,7 +73,7 @@ export default function TransactionHistory({
           <div className="text-sm font-semibold text-text-primary">Transaction history</div>
           <div className="mt-1 text-xs text-text-muted">
             {isConnected && publicKey
-              ? `Recent vault activity for ${shortenAddress(publicKey, 6)}`
+              ? `Recent vault activity for ${truncateAddress(publicKey)}`
               : 'Connect a wallet to view history.'}
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function TransactionHistory({
                   {typeLabel(tx.type)}
                 </div>
                 <div className="text-text-primary" role="cell">
-                  {formatAmount(tx.amount)}
+                  {formatBalance(tx.amount)}
                 </div>
                 <div className="text-text-muted" role="cell">
                   {new Date(tx.createdAt).toLocaleString()}
@@ -189,21 +189,23 @@ export default function TransactionHistory({
                   </span>
                   {tx.hash ? (
                     <div className="mt-1 flex items-center gap-1 text-xs text-text-muted">
-                      <span>Hash: {shortenAddress(tx.hash, 8)}</span>
+                      <span>Hash: {truncateAddress(tx.hash, 8, 8)}</span>
                       <CopyButton text={tx.hash} label="Copy hash" size="sm" />
                     </div>
                   ) : null}
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="text-text-muted">Amount</span>
-                  <span className="text-text-primary">{formatAmount(tx.amount)}</span>
+                  <span className="text-text-primary">{formatBalance(tx.amount)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="text-text-muted">Date</span>
                   <span className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</span>
                 </div>
                 {tx.hash ? (
-                  <div className="text-xs text-text-muted">Hash: {shortenAddress(tx.hash, 8)}</div>
+                  <div className="text-xs text-text-muted">
+                    Hash: {truncateAddress(tx.hash, 8, 8)}
+                  </div>
                 ) : null}
               </div>
             ))

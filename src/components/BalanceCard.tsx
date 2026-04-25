@@ -1,7 +1,7 @@
-import { formatAmount, shortenAddress } from "@/utils/contractHelpers";
-import { StatisticsSkeleton } from "./Skeletons";
-import { AppTooltip } from "./AppTooltip";
-import { GLOSSARY } from "@/utils/glossary";
+import { formatBalance, truncateAddress } from '@/utils/formatters';
+import { StatisticsSkeleton } from './Skeletons';
+import { AppTooltip } from './AppTooltip';
+import { GLOSSARY } from '@/utils/glossary';
 
 type BalanceCardProps = {
   isConnected: boolean;
@@ -20,7 +20,7 @@ export default function BalanceCard({
   rewards,
   isLoading,
   error,
-  onRefresh
+  onRefresh,
 }: BalanceCardProps) {
   if (isLoading) return <StatisticsSkeleton />;
 
@@ -30,21 +30,23 @@ export default function BalanceCard({
         <div>
           <div className="text-sm font-semibold text-text-primary">Vault balance</div>
           <div className="mt-1 text-xs text-text-muted">
-            {isConnected && publicKey ? `Wallet: ${shortenAddress(publicKey, 6)}` : "Connect a wallet to view balances."}
+            {isConnected && publicKey
+              ? `Wallet: ${truncateAddress(publicKey)}`
+              : 'Connect a wallet to view balances.'}
           </div>
         </div>
         <button
           type="button"
           onClick={onRefresh}
           disabled={!isConnected || isLoading}
-          aria-label={isLoading ? "Loading vault balances" : "Refresh vault balances"}
+          aria-label={isLoading ? 'Loading vault balances' : 'Refresh vault balances'}
           className="rounded-xl border border-border-primary bg-background-secondary/30 px-3 py-2 text-xs font-medium text-text-primary transition hover:bg-background-secondary/60 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isLoading ? "Loading..." : "Refresh"}
+          {isLoading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
 
-        <div className="mt-6 grid gap-4">
+      <div className="mt-6 grid gap-4">
         <div className="rounded-2xl border border-border-primary bg-background-secondary/20 p-4">
           <div className="flex items-baseline gap-1.5">
             <div className="text-xs text-text-muted">Balance</div>
@@ -54,12 +56,18 @@ export default function BalanceCard({
               </span>
             </AppTooltip>
           </div>
-          <div className="mt-2 text-3xl font-semibold text-text-primary">{formatAmount(balance)}</div>
+          <div className="mt-2 text-3xl font-semibold text-text-primary">
+            {formatBalance(balance)}
+          </div>
         </div>
         <div className="rounded-2xl border border-border-primary bg-background-secondary/20 p-4">
           <div className="text-xs text-text-muted">Rewards</div>
-          <div className="mt-2 text-2xl font-semibold text-text-primary">{formatAmount(rewards)}</div>
-          <div className="mt-1 text-xs text-text-muted">Claim rewards to add them to your balance.</div>
+          <div className="mt-2 text-2xl font-semibold text-text-primary">
+            {formatBalance(rewards)}
+          </div>
+          <div className="mt-1 text-xs text-text-muted">
+            Claim rewards to add them to your balance.
+          </div>
         </div>
         {error ? (
           <div className="rounded-2xl border border-rose-200/50 dark:border-rose-900/50 bg-rose-50/30 dark:bg-rose-950/30 p-4 text-sm text-rose-700 dark:text-rose-200">

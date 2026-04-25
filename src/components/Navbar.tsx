@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useMemo, useState } from 'react';
 
 import { useSidebar } from '@/hooks/useSidebar';
-import { shortenAddress } from '@/utils/contractHelpers';
+import { truncateAddress } from '@/utils/formatters';
 import CopyButton from './CopyButton';
 import ThemeToggle from './ThemeToggle';
 
@@ -19,7 +19,7 @@ type NavbarProps = {
 export default function Navbar({ publicKey, isConnecting, onConnect, onDisconnect }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { isOpen: isSidebarOpen, toggle: toggleSidebar } = useSidebar();
-  const short = useMemo(() => (publicKey ? shortenAddress(publicKey, 6) : null), [publicKey]);
+  const short = useMemo(() => (publicKey ? truncateAddress(publicKey) : null), [publicKey]);
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur transition-colors duration-300">

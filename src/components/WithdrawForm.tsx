@@ -3,7 +3,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
 import { createWithdrawSchema, WithdrawFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
-import { formatAmount, shortenAddress } from '@/utils/contractHelpers';
+import { formatBalance, truncateAddress } from '@/utils/formatters';
 
 type WithdrawFormProps = {
   isConnected: boolean;
@@ -55,7 +55,7 @@ export default function WithdrawForm({
       <div className="mt-1 text-xs text-text-muted">Withdraw tokens from the Axionvera vault.</div>
       <div className="mt-3 rounded-xl border border-border-primary bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary">
         Available balance:{' '}
-        <span className="font-medium text-text-primary">{formatAmount(balance)}</span>
+        <span className="font-medium text-text-primary">{formatBalance(balance)}</span>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-4">
@@ -67,7 +67,7 @@ export default function WithdrawForm({
           label="Amount"
           required
           error={errors.amount}
-          helperText={`Enter amount between 0.0001 and ${formatAmount(balance)}`}
+          helperText={`Enter amount between 0.0001 and ${formatBalance(balance)}`}
         />
 
         {status !== 'idle' ? (
@@ -92,7 +92,7 @@ export default function WithdrawForm({
             {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
             {transactionHash ? (
               <div className="mt-1 text-xs opacity-80">
-                Tx: {shortenAddress(transactionHash, 8)}
+                Tx: {truncateAddress(transactionHash, 8, 8)}
               </div>
             ) : null}
           </div>
