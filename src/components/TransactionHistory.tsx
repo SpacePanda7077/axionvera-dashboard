@@ -44,11 +44,6 @@ function typeLabel(type: VaultTx["type"]) {
   return "Claim";
 }
 
-function sortIcon(active: boolean, direction: SortDirection) {
-  if (!active) return "↕";
-  return direction === "asc" ? "↑" : "↓";
-}
-
 const selectClassName =
   "rounded-lg border border-border-primary bg-background-secondary/30 px-3 py-1.5 text-xs text-text-primary outline-none transition hover:bg-background-secondary/60 focus:border-axion-500";
 
@@ -77,11 +72,9 @@ export default function TransactionHistory({
     const sorted = [...filteredTransactions];
     sorted.sort((a, b) => {
       const directionFactor = sortDirection === "asc" ? 1 : -1;
-
       if (sortKey === "amount") {
         return (Number(a.amount) - Number(b.amount)) * directionFactor;
       }
-
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();
       return (dateA - dateB) * directionFactor;
@@ -93,10 +86,9 @@ export default function TransactionHistory({
 
   const toggleSort = (nextKey: SortKey) => {
     if (sortKey === nextKey) {
-      setSortDirection((previousDirection) => (previousDirection === "asc" ? "desc" : "asc"));
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
       return;
     }
-
     setSortKey(nextKey);
     setSortDirection("desc");
   };
@@ -107,7 +99,9 @@ export default function TransactionHistory({
         <div>
           <div className="text-sm font-semibold text-text-primary">Transaction history</div>
           <div className="mt-1 text-xs text-text-muted">
-            {isConnected && publicKey ? `Recent vault activity for ${shortenAddress(publicKey, 6)}` : "Connect a wallet to view history."}
+            {isConnected && publicKey
+              ? `Recent vault activity for ${shortenAddress(publicKey, 6)}`
+              : "Connect a wallet to view history."}
           </div>
         </div>
         <button
@@ -132,9 +126,7 @@ export default function TransactionHistory({
             aria-label="Filter transactions by type"
           >
             {TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
@@ -148,19 +140,14 @@ export default function TransactionHistory({
             aria-label="Filter transactions by status"
           >
             {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
         {hasActiveFilter ? (
           <button
             type="button"
-            onClick={() => {
-              setTypeFilter("all");
-              setStatusFilter("all");
-            }}
+            onClick={() => { setTypeFilter("all"); setStatusFilter("all"); }}
             aria-label="Clear all transaction filters"
             className="text-xs text-axion-400 transition hover:text-axion-300 focus:outline-none focus:underline"
           >
@@ -170,7 +157,10 @@ export default function TransactionHistory({
       </div>
 
       <div className="mt-5 overflow-hidden rounded-2xl border border-border-primary" role="table" aria-label="Transaction History">
-        <div className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary font-semibold" role="row">
+        <div
+          className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary font-semibold"
+          role="row"
+        >
           <div role="columnheader">Type</div>
           <div role="columnheader">Amount</div>
           <div role="columnheader">Created</div>
@@ -182,11 +172,13 @@ export default function TransactionHistory({
           ) : filteredTransactions.length === 0 ? (
             <div className="px-4 py-6 text-sm text-text-secondary" role="row">
               <div role="cell" className="col-span-4">
-                {hasActiveFilter ? "No transactions match the selected filters." : "No transactions yet."}
+                {hasActiveFilter
+                  ? "No transactions match the selected filters."
+                  : "No transactions yet."}
               </div>
             </div>
           ) : (
-            filteredTransactions.map((tx) => (
+            sortedTransactions.map((tx) => (
               <div
                 key={tx.id}
                 className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] items-center gap-3 px-4 py-3 text-sm"
@@ -206,16 +198,7 @@ export default function TransactionHistory({
                     </div>
                   ) : null}
                 </div>
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-text-muted">Amount</span>
-                  <span className="text-text-primary">{formatAmount(tx.amount)}</span>
-                </div>
-                <div className="flex items-center justify-between gap-2 text-xs">
-                  <span className="text-text-muted">Date</span>
-                  <span className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</span>
-                </div>
-                {tx.hash ? <div className="text-xs text-text-muted">Hash: {shortenAddress(tx.hash, 8)}</div> : null}
-              </article>
+              </div>
             ))
           )}
         </div>
