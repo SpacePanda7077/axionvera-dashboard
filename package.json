@@ -30,6 +30,7 @@
   "dependencies": {
     "@albedo-link/intent": "^0.13.0",
     "@stellar/freighter-api": "^1.7.1",
+    "@t3-oss/env-nextjs": "^0.13.11",
     "next": "^14.2.6",
     "next-themes": "^0.4.6",
     "react": "^18.3.1",
@@ -38,7 +39,7 @@
     "sonner": "^2.0.7",
     "stellar-sdk": "^12.1.0",
     "web-vitals": "^5.2.0",
-    "zod": "^3.22.4"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.3.2",
