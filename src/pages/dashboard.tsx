@@ -1,6 +1,7 @@
 import Head from "next/head";
 
 import BalanceCard from "@/components/BalanceCard";
+import ClaimRewardsCard from "@/components/ClaimRewardsCard";
 import DepositForm from "@/components/DepositForm";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
@@ -33,7 +34,7 @@ export default function DashboardPage() {
           />
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 md:py-8 w-full">
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-              <div className="col-span-1 lg:col-span-1 w-full">
+              <div className="col-span-1 lg:col-span-1 w-full space-y-6">
                 <BalanceCard
                   isConnected={wallet.isConnected}
                   publicKey={wallet.publicKey}
@@ -42,6 +43,14 @@ export default function DashboardPage() {
                   isLoading={vault.isLoading}
                   error={vault.error}
                   onRefresh={vault.refresh}
+                />
+                <ClaimRewardsCard
+                  isConnected={wallet.isConnected}
+                  rewards={vault.rewards}
+                  isLoading={vault.isLoading}
+                  isClaiming={vault.isClaiming}
+                  error={vault.error}
+                  onClaim={vault.claimRewards}
                 />
               </div>
               <div className="col-span-1 lg:col-span-2 w-full">
