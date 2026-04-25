@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
 import { depositSchema, DepositFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
-import { shortenAddress } from '@/utils/contractHelpers';
+import { shortenAddress, type TransactionSimulation } from '@/utils/contractHelpers';
+import { ConfirmTransactionModal } from './ConfirmTransactionModal';
 import { AppTooltip } from './AppTooltip';
 import { GLOSSARY } from '@/utils/glossary';
 
@@ -15,6 +17,7 @@ type DepositFormProps = {
   statusMessage?: string | null;
   transactionHash?: string | null;
   walletBalance?: number | null;
+  onSimulate?: (amount: string) => Promise<TransactionSimulation>;
 };
 
 const NETWORK_FEE_RESERVE = 0.1;
@@ -27,7 +30,12 @@ export default function DepositForm({
   statusMessage,
   transactionHash,
   walletBalance,
+  onSimulate,
 }: DepositFormProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [simulationData, setSimulationData] = useState<TransactionSimulation | null>(null);
+  const [pendingAmount, setPendingAmount] = useState<string>('');
+  const [isSimulating, setIsSimulating] = useState(false);
   const {
     register,
     handleSubmit,
@@ -57,16 +65,51 @@ export default function DepositForm({
   }
 
   const onSubmit = async (data: DepositFormData) => {
-    try {
-      await onDeposit(data.amount.toString());
-      notify.success("Deposit Successful", `You have deposited ${data.amount} tokens.`);
-      reset();
-    } catch (error) {
-      console.error('Deposit error:', error);
+    const amountStr = data.amount.toString();
+    if (onSimulate) {
+      setPendingAmount(amountStr);
+      setIsModalOpen(true);
+      setSimulationData(null);
+      setIsSimulating(true);
+      try {
+        const sim = await onSimulate(amountStr);
+        setSimulationData(sim);
+      } catch (error) {
+        console.error('Simulation error:', error);
+        setIsModalOpen(false);
+        notify.error("Simulation Failed", "Could not simulate transaction.");
+      } finally {
+        setIsSimulating(false);
+      }
+    } else {
+      executeDeposit(amountStr);
     }
   };
 
-  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting;
+  const executeDeposit = async (amount: string) => {
+    try {
+      await onDeposit(amount);
+      notify.success("Deposit Successful", `You have deposited ${amount} tokens.`);
+      reset();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Deposit error:', error);
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (pendingAmount) {
+      executeDeposit(pendingAmount);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSimulationData(null);
+  };
+
+  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating;
 
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
@@ -177,6 +220,16 @@ export default function DepositForm({
           )}
         </button>
       </form>
+
+      <ConfirmTransactionModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirm}
+        action="deposit"
+        amount={pendingAmount}
+        simulation={simulationData}
+        isConfirming={isSubmitting}
+      />
     </section>
   );
 }

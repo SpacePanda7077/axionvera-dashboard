@@ -93,11 +93,8 @@ describe('contractHelpers utility', () => {
     });
 
     it('should withdraw (mocked)', async () => {
-      mockStorage['axionvera:vault:testnet:G_WIT'] = JSON.stringify({
-        balance: '100',
-        rewards: '0',
-        txs: []
-      });
+      // Initialize with deposit instead of mutating mockStorage directly
+      await sdk.deposit({ walletAddress: 'G_WIT', network: 'testnet', amount: '100' });
       
       const tx = await sdk.withdraw({ walletAddress: 'G_WIT', network: 'testnet', amount: '40' });
       expect(tx.status).toBe('success');
@@ -107,17 +104,15 @@ describe('contractHelpers utility', () => {
     });
 
     it('should claim rewards (mocked)', async () => {
-      mockStorage['axionvera:vault:testnet:G_CLA'] = JSON.stringify({
-        balance: '100',
-        rewards: '10',
-        txs: []
-      });
+      // Let's create an initial deposit which gives 0.01 rewards for every 1 unit (100 * 0.01 = 1)
+      // Since the test expects 10 rewards, let's just deposit 1000 to get 10 rewards
+      await sdk.deposit({ walletAddress: 'G_CLA', network: 'testnet', amount: '1000' });
       
       const tx = await sdk.claimRewards({ walletAddress: 'G_CLA', network: 'testnet' });
       expect(tx.status).toBe('success');
       
       const balances = await sdk.getBalances({ walletAddress: 'G_CLA', network: 'testnet' });
-      expect(balances.balance).toBe('110');
+      expect(balances.balance).toBe('1010'); // 1000 deposit + 10 rewards
       expect(balances.rewards).toBe('0');
     });
 

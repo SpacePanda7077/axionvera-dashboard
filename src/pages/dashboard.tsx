@@ -50,6 +50,7 @@ export default function DashboardPage() {
                     isConnected={wallet.isConnected}
                     isSubmitting={vault.isSubmitting}
                     onDeposit={vault.deposit}
+                    onSimulate={vault.simulateAction}
                     status={vault.depositStatus}
                     walletBalance={wallet.balance ? parseFloat(wallet.balance) : null}
 
@@ -69,6 +70,7 @@ export default function DashboardPage() {
                     isSubmitting={vault.isSubmitting}
                     balance={vault.balance}
                     onWithdraw={vault.withdraw}
+                    onSimulate={vault.simulateAction}
                     status={vault.withdrawStatus}
                     statusMessage={
                       vault.withdrawStatus === "pending"
