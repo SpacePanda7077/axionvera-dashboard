@@ -4,6 +4,8 @@ import { FormInput } from './FormInput';
 import { createWithdrawSchema, WithdrawFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
 import { formatAmount, shortenAddress } from '@/utils/contractHelpers';
+import { useState } from 'react';
+import ConfirmTransactionModal from './ConfirmTransactionModal';
 
 type WithdrawFormProps = {
   isConnected: boolean;
@@ -37,14 +39,32 @@ export default function WithdrawForm({
     }
   });
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendingAmount, setPendingAmount] = useState<string | null>(null);
+
   const onSubmit = async (data: WithdrawFormData) => {
+    setPendingAmount(data.amount.toString());
+    setIsModalOpen(true);
+  };
+
+  const handleConfirm = async () => {
+    if (!pendingAmount) return;
+
     try {
-      await onWithdraw(data.amount.toString());
-      notify.success("Withdrawal Successful", `You have withdrawn ${data.amount} tokens.`);
+      await onWithdraw(pendingAmount);
+      notify.success("Withdrawal Successful", `You have withdrawn ${pendingAmount} tokens.`);
       reset();
     } catch (error) {
       console.error('Withdrawal error:', error);
+    } finally {
+      setIsModalOpen(false);
+      setPendingAmount(null);
     }
+  };
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    setPendingAmount(null);
   };
 
   const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting;
@@ -73,13 +93,12 @@ export default function WithdrawForm({
           <div
             role="status"
             aria-live="polite"
-            className={`rounded-xl border px-4 py-3 text-sm ${
-              status === 'success'
-                ? 'border-emerald-900/50 bg-emerald-950/30 text-emerald-200'
-                : status === 'error'
-                  ? 'border-rose-900/50 bg-rose-950/30 text-rose-200'
-                  : 'border-border-primary bg-background-secondary/30 text-text-primary'
-            }`}
+            className={`rounded-xl border px-4 py-3 text-sm ${status === 'success'
+              ? 'border-emerald-900/50 bg-emerald-950/30 text-emerald-200'
+              : status === 'error'
+                ? 'border-rose-900/50 bg-rose-950/30 text-rose-200'
+                : 'border-border-primary bg-background-secondary/30 text-text-primary'
+              }`}
           >
             <div className="font-medium">
               {status === 'pending' ? 'Withdrawal transaction pending' : status === 'success' ? 'Withdrawal completed' : 'Withdrawal failed'}
@@ -100,6 +119,16 @@ export default function WithdrawForm({
           {isSubmitting ? "Submitting..." : "Withdraw"}
         </button>
       </form>
+
+      <ConfirmTransactionModal
+        isOpen={isModalOpen}
+        onClose={handleCancel}
+        onConfirm={handleConfirm}
+        actionType="Withdraw"
+        assetAmount={pendingAmount || "0"}
+        networkFee="~0.00001 XLM" // replace later with real fee
+        contractId="CDLZ...XYZ"   // replace with actual contract ID
+      />
     </section>
   );
 }
