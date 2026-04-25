@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
 import { depositSchema, DepositFormData } from '@/utils/validation';
@@ -14,6 +15,7 @@ type DepositFormProps = {
   status: "idle" | "pending" | "success" | "error";
   statusMessage?: string | null;
   transactionHash?: string | null;
+  defaultAmount?: string;
 };
 
 export default function DepositForm({
@@ -22,12 +24,14 @@ export default function DepositForm({
   onDeposit,
   status,
   statusMessage,
-  transactionHash
+  transactionHash,
+  defaultAmount = ""
 }: DepositFormProps) {
   const {
     register,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isValid, isDirty }
   } = useForm<DepositFormData>({
     resolver: zodResolver(depositSchema),
@@ -36,6 +40,13 @@ export default function DepositForm({
       amount: '' as any,
     }
   });
+
+  // Set default amount from props when component mounts and wallet is connected
+  useEffect(() => {
+    if (defaultAmount && isConnected) {
+      setValue('amount', defaultAmount as any, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [defaultAmount, isConnected, setValue]);
 
   const onSubmit = async (data: DepositFormData) => {
     try {
