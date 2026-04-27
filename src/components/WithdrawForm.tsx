@@ -1,20 +1,20 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
-import TransactionSuccess from './TransactionSuccess';
+import { TransactionStepper } from './TransactionStepper';
 import { useFormValidation } from '@/hooks/useFormValidation';
-import { withdrawSchema, WithdrawFormData } from '@/utils/validation';
+import { createWithdrawSchema } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
 import { formatAmount, shortenAddress, type TransactionSimulation } from '@/utils/contractHelpers';
 import { ConfirmTransactionModal } from './ConfirmTransactionModal';
+import type { TxStep } from '@/utils/pollTransaction';
 
 type WithdrawFormProps = {
   isConnected: boolean;
   isSubmitting: boolean;
   balance: string;
   onWithdraw: (amount: string) => Promise<void>;
-  status: "idle" | "pending" | "success" | "error";
+  status: 'idle' | 'pending' | 'success' | 'error';
+  txStep?: TxStep | null;
   statusMessage?: string | null;
   transactionHash?: string | null;
   onSimulate?: (amount: string) => Promise<TransactionSimulation>;
@@ -26,38 +26,41 @@ export default function WithdrawForm({
   balance,
   onWithdraw,
   status,
+  txStep,
   statusMessage,
   transactionHash,
-  onSimulate
+  onSimulate,
 }: WithdrawFormProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [simulationData, setSimulationData] = useState<TransactionSimulation | null>(null);
-  const [pendingAmount, setPendingAmount] = useState<string>('');
+  const [pendingAmount, setPendingAmount] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors, isValid, isDirty }
-  } = useForm<WithdrawFormData>({
-    resolver: zodResolver(createWithdrawSchema(parseFloat(balance))),
-    mode: 'onChange',
-    defaultValues: {
-      amount: '' as any,
-    }
-  });
 
   const numericBalance = parseFloat(balance);
+  const schema = createWithdrawSchema(numericBalance > 0 ? numericBalance : 10000);
 
-  function handleMax() {
-    if (numericBalance > 0) {
-      setValue('amount', numericBalance as any, { shouldValidate: true, shouldDirty: true });
+  const { values, errors, shouldDisableSubmit, updateField, handleBlur, handleSubmit, reset, setValue } =
+    useFormValidation({
+      schema,
+      initialValues: { amount: '' },
+    });
+
+  const executeWithdraw = async (amount: string) => {
+    try {
+      await onWithdraw(amount);
+      reset();
+      setIsModalOpen(false);
+    } catch {
+      setIsModalOpen(false);
     }
-  }
+  };
 
-  const onSubmit = async (data: WithdrawFormData) => {
-    const amountStr = data.amount.toString();
+  const onSubmit = async () => {
+    const parsed = schema.safeParse(values);
+    if (!parsed.success) return;
+
+    const amountStr = values.amount.toString();
+
     if (onSimulate) {
       setPendingAmount(amountStr);
       setIsModalOpen(true);
@@ -66,56 +69,40 @@ export default function WithdrawForm({
       try {
         const sim = await onSimulate(amountStr);
         setSimulationData(sim);
-      } catch (error) {
-        console.error('Simulation error:', error);
+      } catch {
         setIsModalOpen(false);
-        notify.error("Simulation Failed", "Could not simulate transaction.");
+        notify.error('Simulation Failed', 'Could not simulate transaction.');
       } finally {
         setIsSimulating(false);
       }
     } else {
-      executeWithdraw(amountStr);
+      await executeWithdraw(amountStr);
     }
   };
 
-  const executeWithdraw = async (amount: string) => {
-    try {
-      await onWithdraw(amount);
-      notify.success("Withdrawal Successful", `You have withdrawn ${amount} tokens.`);
-      reset();
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error('Withdrawal error:', error);
-      setIsModalOpen(false);
-    }
-  }, [status, transactionHash, withdrawAmount]);
-
-  const handleCloseModal = () => {
-    setShowSuccessModal(false);
-    setWithdrawAmount('');
-    reset();
-  };
-
-  const handleConfirm = () => {
-    if (pendingAmount) {
-      executeWithdraw(pendingAmount);
+  const handleMax = () => {
+    if (numericBalance > 0) {
+      updateField('amount', numericBalance.toString());
     }
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSimulationData(null);
-  };
-
-  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating;
+  const isDisabled = !isConnected || shouldDisableSubmit() || isSubmitting || isSimulating;
 
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
       <div className="text-sm font-semibold text-text-primary">Withdraw</div>
       <div className="mt-1 text-xs text-text-muted">Withdraw tokens from the Axionvera vault.</div>
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-4">
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+          onSubmit();
+        }}
+        className="mt-5 space-y-4"
+      >
         <div className="flex items-center justify-between text-xs text-text-muted">
-          <span>Available Balance</span>
+          <span>Available Balance:</span>
           <div className="flex items-center gap-2">
             <span className="font-medium text-text-primary">{formatAmount(balance)}</span>
             <button
@@ -130,77 +117,75 @@ export default function WithdrawForm({
         </div>
 
         <FormInput
-          {...register('amount')}
           id="withdraw-amount"
           inputMode="decimal"
           placeholder="0.0"
           label="Amount"
           required
+          value={values.amount}
+          onChange={(v) => updateField('amount', v)}
+          onBlur={() => handleBlur('amount')}
           error={errors.amount}
           helperText={`Enter amount between 0.0001 and ${formatAmount(balance)}`}
         />
 
-          {status !== 'idle' && status !== 'success' ? (
-            <div
-              role="status"
-              aria-live="polite"
-              className={`rounded-xl border px-4 py-3 text-sm ${
-                status === 'error'
-                  ? 'border-rose-900/50 bg-rose-950/30 text-rose-200'
-                  : 'border-border-primary bg-background-secondary/30 text-text-primary'
-              }`}
-            >
-              <div className="font-medium">
-                {status === 'pending' ? 'Withdrawal transaction pending' : 'Withdrawal failed'}
-              </div>
-              {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
-              {transactionHash && status === 'error' ? (
-                <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
-              ) : null}
+        {txStep && status === 'pending' ? (
+          <div role="status" aria-live="polite" className="pt-1">
+            <TransactionStepper txStep={txStep} />
+          </div>
+        ) : status !== 'idle' && status !== 'success' ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              status === 'error'
+                ? 'border-rose-900/50 bg-rose-950/30 text-rose-200'
+                : 'border-border-primary bg-background-secondary/30 text-text-primary'
+            }`}
+          >
+            <div className="font-medium">
+              {status === 'pending' ? 'Confirming Transaction...' : 'Withdrawal failed'}
             </div>
-          ) : null}
+            {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
+            {transactionHash && status === 'error' ? (
+              <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
+            ) : null}
+          </div>
+        ) : status === 'success' && transactionHash ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-axion-500/30 bg-axion-500/10 px-4 py-3 text-sm text-axion-300"
+          >
+            <div className="font-medium">Withdrawal completed</div>
+            <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
+          </div>
+        ) : null}
 
         <button
           type="submit"
-          disabled={shouldDisableSubmit}
-          aria-label={isSubmitting ? "Submitting withdrawal" : "Withdraw tokens"}
+          disabled={isDisabled}
+          aria-label={isSubmitting ? 'Submitting withdrawal' : 'Withdraw tokens'}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-primary bg-background-secondary/30 px-4 py-3 text-sm font-medium text-text-primary transition hover:bg-background-secondary/60 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? (
             <>
-              <svg
-                className="h-4 w-4 animate-spin"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
+              <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
               Withdrawing...
             </>
           ) : (
-            "Withdraw"
+            'Withdraw'
           )}
         </button>
       </form>
 
       <ConfirmTransactionModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        onConfirm={handleConfirm}
+        onClose={() => { setIsModalOpen(false); setSimulationData(null); }}
+        onConfirm={() => { if (pendingAmount) executeWithdraw(pendingAmount); }}
         action="withdraw"
         amount={pendingAmount}
         simulation={simulationData}

@@ -24,20 +24,33 @@ describe("DepositForm", () => {
     await waitFor(() => expect(onDeposit).toHaveBeenCalledWith("12.5"));
   });
 
-  test("renders transaction feedback", () => {
+  test("shows TransactionStepper when status=pending and txStep is set", () => {
+    render(
+      <DepositForm
+        isConnected={true}
+        isSubmitting={true}
+        onDeposit={jest.fn(async () => undefined)}
+        status="pending"
+        txStep="submitted"
+      />
+    );
+
+    expect(screen.getByRole("list", { name: /transaction progress/i })).toBeInTheDocument();
+    expect(screen.getByText("Submitted to Network")).toBeInTheDocument();
+  });
+
+  test("renders success feedback", () => {
     render(
       <DepositForm
         isConnected={true}
         isSubmitting={false}
         onDeposit={jest.fn(async () => undefined)}
         status="success"
-        statusMessage="Successfully deposited 12.5 tokens."
         transactionHash="SIM-1234567890ABCDEF"
       />
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(/deposit completed/i);
-    expect(screen.getByText(/successfully deposited 12.5 tokens/i)).toBeInTheDocument();
     expect(screen.getByText(/tx:/i)).toBeInTheDocument();
   });
 });
