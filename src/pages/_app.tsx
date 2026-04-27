@@ -6,6 +6,7 @@ import "@/styles/globals.css";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider as AppThemeProvider } from "@/contexts/ThemeContext";
 import { WalletProvider } from "@/contexts/WalletContext";
+import { QueryProvider } from "@/contexts/QueryContext";
 import ThemeToggle from "@/components/ThemeToggle";
 import { inter, jetbrainsMono } from "@/lib/fonts";
 
