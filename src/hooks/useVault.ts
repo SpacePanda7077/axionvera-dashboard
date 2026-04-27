@@ -5,7 +5,8 @@ import {
   createAxionveraVaultSdk,
   parsePositiveAmount,
   type AxionveraVaultSdk,
-  type VaultTx
+  type VaultTx,
+  type TransactionSimulation
 } from "@/utils/contractHelpers";
 import { NETWORK } from "@/utils/networkConfig";
 import { scvI128ToString, extractSimulationError } from "@/utils/xdrParser";
@@ -308,6 +309,13 @@ export function useVault({ walletAddress, sdk: providedSdk }: UseVaultArgs) {
     refresh,
     deposit,
     withdraw,
-    claimRewards
+    claimRewards,
+    simulateAction: useCallback(
+      async (type: VaultActionType, amount?: string): Promise<TransactionSimulation> => {
+        if (!walletAddress) throw new Error("Wallet not connected");
+        return sdk.simulateTransaction({ walletAddress, network: NETWORK, type, amount });
+      },
+      [sdk, walletAddress]
+    )
   };
 }

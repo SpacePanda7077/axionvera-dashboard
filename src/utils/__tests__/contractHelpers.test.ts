@@ -113,7 +113,7 @@ describe('contractHelpers utility', () => {
       expect(tx.status).toBe('success');
 
       const balances = await sdk.getBalances({ walletAddress: 'G_CLA', network: 'testnet' });
-      expect(balances.balance).toBe('110');
+      expect(balances.balance).toBe('1010'); // 1000 deposit + 10 rewards
       expect(balances.rewards).toBe('0');
     });
 
