@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import { formatAmount, shortenAddress } from "@/utils/contractHelpers";
-import type { VaultTx, VaultTxType, VaultTxStatus } from "@/utils/contractHelpers";
+import type {
+  VaultTx,
+  VaultTxType,
+  VaultTxStatus,
+} from "@/utils/contractHelpers";
 import CopyButton from "./CopyButton";
 import { TransactionSkeleton } from "./Skeletons";
 
@@ -47,19 +51,21 @@ const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
   { value: "all", label: "All Types" },
   { value: "deposit", label: "Deposit" },
   { value: "withdraw", label: "Withdraw" },
-  { value: "claim", label: "Claim" }
+  { value: "claim", label: "Claim" },
 ];
 
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
   { value: "all", label: "All Statuses" },
   { value: "success", label: "Success" },
   { value: "pending", label: "Pending" },
-  { value: "failed", label: "Failed" }
+  { value: "failed", label: "Failed" },
 ];
 
 function statusStyles(status: VaultTx["status"]) {
-  if (status === "success") return "border-emerald-900/50 bg-emerald-950/30 text-emerald-200";
-  if (status === "failed") return "border-rose-900/50 bg-rose-950/30 text-rose-200";
+  if (status === "success")
+    return "border-emerald-900/50 bg-emerald-950/30 text-emerald-200";
+  if (status === "failed")
+    return "border-rose-900/50 bg-rose-950/30 text-rose-200";
   return "border-border-primary bg-background-secondary/30 text-text-primary";
 }
 
@@ -83,7 +89,7 @@ export default function TransactionHistory({
   isLoading,
   transactions,
   onClaimRewards,
-  isClaiming
+  isClaiming,
 }: TransactionHistoryProps) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -134,7 +140,9 @@ export default function TransactionHistory({
 
   const toggleSort = (nextKey: SortKey) => {
     if (sortKey === nextKey) {
-      setSortDirection((previousDirection) => (previousDirection === "asc" ? "desc" : "asc"));
+      setSortDirection((previousDirection) =>
+        previousDirection === "asc" ? "desc" : "asc",
+      );
       return;
     }
 
@@ -153,106 +161,66 @@ export default function TransactionHistory({
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="text-sm font-semibold text-text-primary">Transaction history</div>
+          <div className="text-sm font-semibold text-text-primary">
+            Transaction history
+          </div>
           <div className="mt-1 text-xs text-text-muted">
-            {isConnected && publicKey ? `Recent vault activity for ${shortenAddress(publicKey, 6)}` : "Connect a wallet to view history."}
+            {isConnected && publicKey
+              ? `Recent vault activity for ${shortenAddress(publicKey, 6)}`
+              : "Connect a wallet to view history."}
           </div>
         </div>
+        <button
+          type="button"
+          onClick={onClaimRewards}
+          disabled={!isConnected || isClaiming}
+          aria-label={
+            isClaiming ? "Claiming rewards" : "Claim your earned rewards"
+          }
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isClaiming ? "Claiming..." : "Claim Rewards"}
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              aria-label="Open filter options"
-              aria-expanded={isFilterOpen}
-              className={`rounded-xl px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60 ${
-                hasActiveFilter
-                  ? "bg-axion-500/20 text-axion-400 hover:bg-axion-500/30"
-                  : "bg-white/10 text-text-primary hover:bg-white/15"
-              }`}
-            >
-              Filter {hasActiveFilter ? "•" : ""}
-            </button>
-            <FilterPopover isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)}>
-              <div className="space-y-4">
-                <div className="border-b border-border-primary pb-3">
-                  <h3 className="text-sm font-semibold text-text-primary">Filter Transactions</h3>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <label htmlFor="type-filter" className="mb-1.5 block text-xs text-text-muted">Type</label>
-                    <select
-                      id="type-filter"
-                      value={typeFilter}
-                      onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
-                      className={`${selectClassName} w-full`}
-                      aria-label="Filter transactions by type"
-                    >
-                      {TYPE_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="status-filter" className="mb-1.5 block text-xs text-text-muted">Status</label>
-                    <select
-                      id="status-filter"
-                      value={statusFilter}
-                      onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-                      className={`${selectClassName} w-full`}
-                      aria-label="Filter transactions by status"
-                    >
-                      {STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label htmlFor="start-date" className="mb-1.5 block text-xs text-text-muted">Start Date</label>
-                      <input
-                        id="start-date"
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className={selectClassName}
-                        aria-label="Filter transactions from date"
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="end-date" className="mb-1.5 block text-xs text-text-muted">End Date</label>
-                      <input
-                        id="end-date"
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className={selectClassName}
-                        aria-label="Filter transactions to date"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {hasActiveFilter ? (
-                  <button
-                    type="button"
-                    onClick={clearFilters}
-                    aria-label="Clear all transaction filters"
-                    className="w-full rounded-lg border border-border-primary px-3 py-2 text-xs font-medium text-text-secondary transition hover:bg-background-secondary/60 hover:text-text-primary"
-                  >
-                    Clear Filters
-                  </button>
-                ) : null}
-              </div>
-            </FilterPopover>
-          </div>
+          <label htmlFor="type-filter" className="text-xs text-text-muted">
+            Type
+          </label>
+          <select
+            id="type-filter"
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+            className={selectClassName}
+            aria-label="Filter transactions by type"
+          >
+            {TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="status-filter" className="text-xs text-text-muted">
+            Status
+          </label>
+          <select
+            id="status-filter"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className={selectClassName}
+            aria-label="Filter transactions by status"
+          >
+            {STATUS_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {hasActiveFilter ? (
           <button
             type="button"
             onClick={onClaimRewards}
@@ -265,8 +233,15 @@ export default function TransactionHistory({
         </div>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-2xl border border-border-primary" role="table" aria-label="Transaction History">
-        <div className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary font-semibold" role="row">
+      <div
+        className="mt-5 overflow-hidden rounded-2xl border border-border-primary"
+        role="table"
+        aria-label="Transaction History"
+      >
+        <div
+          className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary font-semibold"
+          role="row"
+        >
           <div role="columnheader">Type</div>
           <div role="columnheader">Amount</div>
           <div role="columnheader">Created</div>
@@ -278,7 +253,9 @@ export default function TransactionHistory({
           ) : filteredTransactions.length === 0 ? (
             <div className="px-4 py-6 text-sm text-text-secondary" role="row">
               <div role="cell" className="col-span-4">
-                {hasActiveFilter ? "No transactions match the selected filters." : "No transactions yet."}
+                {hasActiveFilter
+                  ? "No transactions match the selected filters."
+                  : "No transactions yet."}
               </div>
             </div>
           ) : (
@@ -288,11 +265,19 @@ export default function TransactionHistory({
                 className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] items-center gap-3 px-4 py-3 text-sm"
                 role="row"
               >
-                <div className="text-text-primary" role="cell">{typeLabel(tx.type)}</div>
-                <div className="text-text-primary" role="cell">{formatAmount(tx.amount)}</div>
-                <div className="text-text-muted" role="cell">{new Date(tx.createdAt).toLocaleString()}</div>
+                <div className="text-text-primary" role="cell">
+                  {typeLabel(tx.type)}
+                </div>
+                <div className="text-text-primary" role="cell">
+                  {formatAmount(tx.amount)}
+                </div>
+                <div className="text-text-muted" role="cell">
+                  {new Date(tx.createdAt).toLocaleString()}
+                </div>
                 <div role="cell">
-                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusStyles(tx.status)}`}>
+                  <span
+                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusStyles(tx.status)}`}
+                  >
                     {tx.status}
                   </span>
                   {tx.hash ? (
@@ -302,6 +287,15 @@ export default function TransactionHistory({
                     </div>
                   ) : null}
                 </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-text-muted">Amount</span>
+                  <span className="text-text-primary">{formatAmount(tx.amount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-text-muted">Date</span>
+                  <span className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</span>
+                </div>
+                {tx.hash ? <div className="text-xs text-text-muted">Hash: {shortenAddress(tx.hash, 8)}</div> : null}
               </div>
             ))
           )}
@@ -310,7 +304,8 @@ export default function TransactionHistory({
 
       {hasActiveFilter && !isLoading ? (
         <div className="mt-3 text-xs text-text-muted">
-          Showing {sortedTransactions.length} of {transactions.length} transactions
+          Showing {filteredTransactions.length} of {transactions.length}{" "}
+          transactions
         </div>
       ) : null}
     </section>
