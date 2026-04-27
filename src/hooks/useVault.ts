@@ -6,11 +6,11 @@ import {
   createAxionveraVaultSdk,
   parsePositiveAmount,
   type AxionveraVaultSdk,
-  type VaultTx
+  type VaultTx,
+  type TransactionSimulation
 } from "@/utils/contractHelpers";
 import { NETWORK } from "@/utils/networkConfig";
-import { useTransactionHistory } from "./useTransactionHistory";
-import { useVaultBalances } from "./useVaultBalances";
+import { scvI128ToString, extractSimulationError } from "@/utils/xdrParser";
 
 type UseVaultArgs = {
   walletAddress: string | null;
@@ -59,7 +59,12 @@ const INITIAL_STATE: VaultState = {
 };
 
 function getErrorMessage(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  if (error instanceof Error) return error.message;
+  if (error !== null && typeof error === "object") {
+    const simError = extractSimulationError(error as { error?: string });
+    if (simError) return simError;
+  }
+  return fallback;
 }
 
 function createPendingTransaction(type: VaultActionType, amount: string): VaultTx {
@@ -120,9 +125,19 @@ export function useVault({ walletAddress, sdk: providedSdk }: UseVaultArgs) {
   const balancesQuery = useVaultBalances(walletAddress);
   const transactionsQuery = useTransactionHistory(walletAddress);
 
-  // Combine query states
-  const isLoading = balancesQuery.isLoading || transactionsQuery.isLoading;
-  const error = balancesQuery.error?.message || transactionsQuery.error?.message || state.error || null;
+      setState((current) => ({
+        ...current,
+        balance: scvI128ToString(balances.balance) ?? balances.balance,
+        rewards: scvI128ToString(balances.rewards) ?? balances.rewards,
+        transactions,
+        isLoading: false
+      }));
+    } catch (error) {
+      const message = getErrorMessage(error, "Failed to load vault state.");
+      notify.error("Vault Update Failed", message);
+      setState((current) => ({ ...current, isLoading: false, error: message }));
+    }
+  }, [sdk, walletAddress]);
 
   const refresh = useCallback(async () => {
     await Promise.all([
@@ -308,6 +323,13 @@ export function useVault({ walletAddress, sdk: providedSdk }: UseVaultArgs) {
     refresh,
     deposit,
     withdraw,
-    claimRewards
+    claimRewards,
+    simulateAction: useCallback(
+      async (type: VaultActionType, amount?: string): Promise<TransactionSimulation> => {
+        if (!walletAddress) throw new Error("Wallet not connected");
+        return sdk.simulateTransaction({ walletAddress, network: NETWORK, type, amount });
+      },
+      [sdk, walletAddress]
+    )
   };
 }

@@ -24,7 +24,7 @@ export default function App({ Component, pageProps }: AppProps) {
     // fontFamily tokens and any CSS that references them directly.
     <div className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <ErrorBoundary>
-        <QueryProvider>
+        <NextThemeProvider attribute="data-theme" defaultTheme="system" enableSystem>
           <AppThemeProvider>
             <WalletProvider>
               <Component {...pageProps} />
@@ -37,7 +37,7 @@ export default function App({ Component, pageProps }: AppProps) {
               />
             </WalletProvider>
           </AppThemeProvider>
-        </QueryProvider>
+        </NextThemeProvider>
       </ErrorBoundary>
     </div>
   );

@@ -241,6 +241,15 @@ export default function TransactionHistory({
                     </div>
                   ) : null}
                 </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-text-muted">Amount</span>
+                  <span className="text-text-primary">{formatAmount(tx.amount)}</span>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-xs">
+                  <span className="text-text-muted">Date</span>
+                  <span className="text-text-muted">{new Date(tx.createdAt).toLocaleString()}</span>
+                </div>
+                {tx.hash ? <div className="text-xs text-text-muted">Hash: {shortenAddress(tx.hash, 8)}</div> : null}
               </div>
             ))
           )}
