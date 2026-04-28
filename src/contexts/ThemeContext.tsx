@@ -31,14 +31,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 }
 
 export function useTheme() {
+  const nextTheme = useNextTheme();
   const context = useContext(ThemeContext);
+  
   if (context === undefined) {
-    // Fallback to next-themes directly if provider is missing
-    try {
-      return useNextTheme();
-    } catch {
-      throw new Error('useTheme must be used within a ThemeProvider');
-    }
+    return nextTheme;
   }
   return context;
 }
