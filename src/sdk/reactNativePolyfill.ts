@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 let rnCryptoInstalled = false;
 try {
-   
+  // @ts-expect-error - Optional dependency for React Native environments
   const QuickCrypto = require('react-native-quick-crypto') as typeof import('react-native-quick-crypto');
   if (typeof global.crypto === 'undefined') {
     // Provide a minimal Web Crypto-compatible object so existing code paths
@@ -37,7 +37,6 @@ try {
 //    The `buffer` npm package mirrors Node's Buffer on all platforms.
 // ---------------------------------------------------------------------------
 try {
-  
   const { Buffer: PolyfillBuffer } = require('buffer') as typeof import('buffer');
   if (typeof global.Buffer === 'undefined') {
     (global as unknown as Record<string, unknown>).Buffer = PolyfillBuffer;
@@ -52,7 +51,6 @@ try {
 //    in React Native without any native modules.
 // ---------------------------------------------------------------------------
 try {
-  
   const { Readable, Writable, Transform, PassThrough } =
     require('readable-stream') as typeof import('readable-stream');
   const g = global as unknown as Record<string, unknown>;
