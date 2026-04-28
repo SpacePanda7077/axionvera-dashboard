@@ -1,10 +1,10 @@
 import dynamic from "next/dynamic";
 import Head from "next/head";
-import dynamic from "next/dynamic";
 
 import BalanceCard from "@/components/BalanceCard";
 import DepositForm from "@/components/DepositForm";
 import Navbar from "@/components/Navbar";
+import NetworkMismatchBanner from "@/components/NetworkMismatchBanner";
 import Sidebar from "@/components/Sidebar";
 import { TransactionSkeleton } from "@/components/Skeletons";
 import WithdrawForm from "@/components/WithdrawForm";
@@ -48,6 +48,9 @@ export default function DashboardPage() {
             onConnect={wallet.connect}
             onDisconnect={wallet.disconnect}
           />
+          {wallet.isNetworkMismatch && (
+            <NetworkMismatchBanner actualNetwork={wallet.network} />
+          )}
           <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 md:py-8 w-full">
             <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
               <div className="col-span-1 lg:col-span-1 w-full">
@@ -70,7 +73,7 @@ export default function DashboardPage() {
                     onSimulate={vault.simulateAction}
                     status={vault.depositStatus}
                     walletBalance={wallet.balance ? parseFloat(wallet.balance) : null}
-
+                    isNetworkMismatch={wallet.isNetworkMismatch}
                     statusMessage={
                       vault.depositStatus === "pending"
                         ? `Depositing ${vault.lastDepositAmount ?? "0"} tokens into the vault.`
@@ -89,6 +92,7 @@ export default function DashboardPage() {
                     onWithdraw={vault.withdraw}
                     onSimulate={vault.simulateAction}
                     status={vault.withdrawStatus}
+                    isNetworkMismatch={wallet.isNetworkMismatch}
                     statusMessage={
                       vault.withdrawStatus === "pending"
                         ? `Withdrawing ${vault.lastWithdrawAmount ?? "0"} tokens from the vault.`
@@ -122,3 +126,4 @@ export default function DashboardPage() {
     </>
   );
 }
+
