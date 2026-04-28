@@ -223,14 +223,12 @@ export default function TransactionHistory({
         {hasActiveFilter ? (
           <button
             type="button"
-            onClick={onClaimRewards}
-            disabled={!isConnected || isClaiming}
-            aria-label={isClaiming ? "Claiming rewards" : "Claim your earned rewards"}
-            className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+            onClick={clearFilters}
+            className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-white/15"
           >
-            {isClaiming ? "Claiming..." : "Claim Rewards"}
+            Reset Filters
           </button>
-        </div>
+        ) : null}
       </div>
 
       <div
