@@ -8,10 +8,12 @@ import { withdrawSchema, WithdrawFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
 import { formatAmount, shortenAddress, type TransactionSimulation } from '@/utils/contractHelpers';
 import { ConfirmTransactionModal } from './ConfirmTransactionModal';
+import { FormSkeleton } from './Skeletons';
 
 type WithdrawFormProps = {
   isConnected: boolean;
   isSubmitting: boolean;
+  isLoading?: boolean;
   balance: string;
   onWithdraw: (amount: string) => Promise<void>;
   status: "idle" | "pending" | "success" | "error";
@@ -23,6 +25,7 @@ type WithdrawFormProps = {
 export default function WithdrawForm({
   isConnected,
   isSubmitting,
+  isLoading,
   balance,
   onWithdraw,
   status,
@@ -34,6 +37,8 @@ export default function WithdrawForm({
   const [simulationData, setSimulationData] = useState<TransactionSimulation | null>(null);
   const [pendingAmount, setPendingAmount] = useState<string>('');
   const [isSimulating, setIsSimulating] = useState(false);
+
+  if (isLoading) return <FormSkeleton />;
   const {
     register,
     handleSubmit,
