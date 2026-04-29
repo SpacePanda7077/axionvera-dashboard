@@ -10,10 +10,12 @@ import { shortenAddress, type TransactionSimulation } from '@/utils/contractHelp
 import { ConfirmTransactionModal } from './ConfirmTransactionModal';
 import { AppTooltip } from './AppTooltip';
 import { GLOSSARY } from '@/utils/glossary';
+import { FormSkeleton } from './Skeletons';
 
 type DepositFormProps = {
   isConnected: boolean;
   isSubmitting: boolean;
+  isLoading?: boolean;
   onDeposit: (amount: string) => Promise<void>;
   status: "idle" | "pending" | "success" | "error";
   statusMessage?: string | null;
@@ -27,6 +29,7 @@ const NETWORK_FEE_RESERVE = 0.1;
 export default function DepositForm({
   isConnected,
   isSubmitting,
+  isLoading,
   onDeposit,
   status,
   statusMessage,
@@ -38,6 +41,8 @@ export default function DepositForm({
   const [simulationData, setSimulationData] = useState<TransactionSimulation | null>(null);
   const [pendingAmount, setPendingAmount] = useState<string>('');
   const [isSimulating, setIsSimulating] = useState(false);
+
+  if (isLoading) return <FormSkeleton />;
   const {
     register,
     handleSubmit,
