@@ -22,6 +22,7 @@ type WithdrawFormProps = {
   statusMessage?: string | null;
   transactionHash?: string | null;
   onSimulate?: (amount: string) => Promise<TransactionSimulation>;
+  isNetworkMismatch?: boolean;
 };
 
 export default function WithdrawForm({
@@ -33,6 +34,8 @@ export default function WithdrawForm({
   status,
   statusMessage,
   transactionHash,
+  onSimulate,
+  isNetworkMismatch,
   defaultAmount = ""
   onSimulate
 }: WithdrawFormProps) {
@@ -139,7 +142,7 @@ export default function WithdrawForm({
     setSimulationData(null);
   };
 
-  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating;
+  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating || !!isNetworkMismatch;
 
   return (
     <>
@@ -177,6 +180,16 @@ export default function WithdrawForm({
           <div
             role="status"
             aria-live="polite"
+            className={`rounded-xl border px-4 py-3 text-sm ${
+              status === 'error'
+                ? 'border-rose-900/50 bg-rose-950/30 text-rose-200'
+                : status === 'success'
+                ? 'border-emerald-900/50 bg-emerald-950/30 text-emerald-200'
+                : 'border-border-primary bg-background-secondary/30 text-text-primary'
+            }`}
+          >
+            <div className="font-medium">
+              {status === 'pending' ? 'Withdrawal transaction pending' : status === 'success' ? 'Withdrawal completed' : 'Withdrawal failed'}
             className={`rounded-xl border px-4 py-3 text-sm ${status === 'success'
               ? 'border-emerald-900/50 bg-emerald-950/30 text-emerald-200'
               : status === 'error'
@@ -204,7 +217,12 @@ export default function WithdrawForm({
                 <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
               ) : null}
             </div>
-          ) : null}
+            {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
+            {transactionHash ? (
+              <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
+            ) : null}
+          </div>
+        ) : null}
 
           <button
             type="submit"
@@ -262,3 +280,4 @@ export default function WithdrawForm({
     </>
   );
 }
+

@@ -3,6 +3,10 @@ import { useForm } from 'react-hook-form';
 import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
+import { depositSchema, DepositFormData } from '@/utils/validation';
+import { notify } from '@/utils/notifications';
+import { shortenAddress, type TransactionSimulation } from '@/utils/contractHelpers';
+import { ConfirmTransactionModal } from './ConfirmTransactionModal';
 import { createDepositSchema, DepositFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
 import { shortenAddress, type TransactionSimulation } from '@/utils/contractHelpers';
@@ -25,6 +29,7 @@ type DepositFormProps = {
   defaultAmount?: string;
   walletBalance?: number | null;
   onSimulate?: (amount: string) => Promise<TransactionSimulation>;
+  isNetworkMismatch?: boolean;
 };
 
 export default function DepositForm({
@@ -38,6 +43,7 @@ export default function DepositForm({
   defaultAmount = ""
   walletBalance,
   onSimulate,
+  isNetworkMismatch,
 }: DepositFormProps) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -52,6 +58,14 @@ export default function DepositForm({
     register,
     handleSubmit,
     reset,
+    formState: { errors, isValid, isDirty }
+  } = useForm<DepositFormData>({
+    resolver: zodResolver(depositSchema),
+    mode: 'onChange',
+    defaultValues: {
+      amount: '' as any,
+    }
+  });
     setValue,
     formState: { errors, isValid, isDirty }
     formState: { errors, isValid, isDirty },
@@ -142,7 +156,7 @@ export default function DepositForm({
     setSimulationData(null);
   };
 
-  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating;
+  const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating || !!isNetworkMismatch;
 
   return (
     <>
@@ -166,6 +180,10 @@ export default function DepositForm({
             label="Amount"
             required
             error={errors.amount}
+            helperText="Enter amount between 0.0001 and 10,000"
+          />
+
+          {status !== 'idle' ? (
             helperText={`Enter amount between 0.0001 and ${walletBalance ? formatAmount(walletBalance.toString()) : '10,000'}`}
           />
 
@@ -189,14 +207,16 @@ export default function DepositForm({
               className={`rounded-xl border px-4 py-3 text-sm ${
                 status === 'error'
                   ? 'border-rose-900/50 bg-rose-950/30 text-rose-200'
+                  : status === 'success'
+                  ? 'border-emerald-900/50 bg-emerald-950/30 text-emerald-200'
                   : 'border-border-primary bg-background-secondary/30 text-text-primary'
               }`}
             >
               <div className="font-medium">
-                {status === 'pending' ? 'Deposit transaction pending' : 'Deposit failed'}
+                {status === 'pending' ? 'Deposit transaction pending' : status === 'success' ? 'Deposit completed' : 'Deposit failed'}
               </div>
               {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
-              {transactionHash && status === 'error' ? (
+              {transactionHash ? (
                 <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
               ) : null}
             </div>
@@ -258,3 +278,4 @@ export default function DepositForm({
     </>
   );
 }
+
