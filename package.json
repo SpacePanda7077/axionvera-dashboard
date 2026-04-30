@@ -40,6 +40,7 @@
     "@next/bundle-analyzer": "^16.2.4",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@stellar/freighter-api": "^1.7.1",
+    "@t3-oss/env-nextjs": "^0.13.11",
     "@types/canvas-confetti": "^1.9.0",
     "canvas-confetti": "^1.9.4",
     "next": "^14.2.6",
@@ -51,7 +52,7 @@
     "sonner": "^2.0.7",
     "stellar-sdk": "^12.1.0",
     "web-vitals": "^5.2.0",
-    "zod": "^3.22.4"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.3.2",

@@ -1,3 +1,4 @@
+import "./src/env.mjs";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -10,4 +11,5 @@ const nextConfig = {
   output: 'standalone'
 };
 
+export default withBundleAnalyzer(nextConfig);
 export default withBundleAnalyzer(nextConfig);
