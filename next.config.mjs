@@ -10,5 +10,4 @@ const nextConfig = {
   output: 'standalone'
 };
 
-export default nextConfig;
 export default withBundleAnalyzer(nextConfig);

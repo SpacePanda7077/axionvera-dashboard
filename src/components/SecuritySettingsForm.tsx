@@ -101,6 +101,7 @@ export default function SecuritySettingsForm({ onSubmit }: SecuritySettingsFormP
 
   const newPassword = watch('newPassword') || '';
   const hasNewPassword = newPassword.length > 0;
+  const shouldDisableSubmit = !isValid || !isDirty || isSubmitting;
 
   function updatePref<K extends keyof SecurityPrefs>(key: K, value: SecurityPrefs[K]) {
     const updated = { ...prefs, [key]: value };
