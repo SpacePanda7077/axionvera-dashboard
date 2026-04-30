@@ -10,11 +10,18 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>Axionvera Dashboard</title>
-        <meta
-          name="description"
-          content="Web interface for interacting with Axionvera smart contracts on Stellar (Soroban)."
-        />
+        <title>AxionVera - DeFi Dashboard on Stellar (Soroban)</title>
+        <meta name="description" content="Connect your Stellar wallet to AxionVera DeFi dashboard. Deposit, withdraw, and earn yields on the Stellar blockchain via Soroban smart contracts." />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content="AxionVera - DeFi Dashboard on Stellar" />
+        <meta property="og:description" content="Connect your Stellar wallet to AxionVera DeFi dashboard. Deposit, withdraw, and earn yields on the Stellar blockchain." />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="AxionVera - DeFi Dashboard on Stellar" />
+        <meta name="twitter:description" content="Connect your Stellar wallet to AxionVera DeFi dashboard. Deposit, withdraw, and earn yields." />
       </Head>
       <main className="min-h-screen transition-colors duration-300">
         <div className="mx-auto max-w-5xl px-6 py-16">
@@ -59,7 +66,7 @@ export default function HomePage() {
                 <>
                   <button
                     type="button"
-                    onClick={connect}
+                    onClick={() => void connect()}
                     disabled={isConnecting}
                     aria-label={isConnecting ? "Connecting to Stellar wallet" : "Connect Stellar wallet"}
                     className="inline-flex items-center justify-center rounded-xl bg-axion-500 px-5 py-3 text-sm font-medium text-white shadow-lg shadow-axion-500/20 transition hover:bg-axion-400 disabled:cursor-not-allowed disabled:opacity-70"
