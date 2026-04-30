@@ -1,3 +1,9 @@
+import type { StellarNetwork } from '@/utils/networkConfig';
+import { withApiResilience, withErrorHandling, ApiCallOptions } from './apiResilience';
+
+export type VaultTxType = 'deposit' | 'withdraw' | 'claim';
+
+export type VaultTxStatus = 'pending' | 'success' | 'failed';
 /**
  * contractHelpers.ts
  *
@@ -83,6 +89,13 @@ export type AxionveraVaultSdk = {
     args: { walletAddress: string; network: StellarNetwork },
     options?: ApiCallOptions
   ) => Promise<VaultTx>;
+};
+
+export function parsePositiveAmount(input: string) {
+  const trimmed = input.trim();
+  const value = Number(trimmed);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return trimmed;
   getBalances: (args: { walletAddress: string; network: StellarNetwork }, options?: ApiCallOptions) => Promise<VaultBalances>;
   getTransactions: (args: { walletAddress: string; network: StellarNetwork }, options?: ApiCallOptions) => Promise<VaultTx[]>;
   deposit: (args: { walletAddress: string; network: StellarNetwork; amount: string }, options?: ApiCallOptions) => Promise<VaultTx>;
@@ -280,6 +293,8 @@ function sleep(ms: number) {
   return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
+function createId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
 function createId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -296,6 +311,9 @@ export function shortenAddress(address: string, chars = 6): string {
   if (address.length <= chars * 2 + 3) return address;
   return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 function loadVault(walletAddress: string, network: StellarNetwork): StoredVault {
+  if (typeof window === 'undefined') return { balance: '0', rewards: '0', txs: [] };
+  const raw = window.localStorage.getItem(getStorageKey(walletAddress, network));
+  if (!raw) return { balance: '0', rewards: '0', txs: [] };
   if (typeof window === "undefined") return { balance: "0", rewards: "0", txs: [] };
 
   const raw = window.localStorage.getItem(getStorageKey(walletAddress, network));
@@ -304,15 +322,18 @@ function loadVault(walletAddress: string, network: StellarNetwork): StoredVault 
   try {
     const parsed = JSON.parse(raw) as StoredVault;
     return {
-      balance: typeof parsed.balance === "string" ? parsed.balance : "0",
-      rewards: typeof parsed.rewards === "string" ? parsed.rewards : "0",
-      txs: Array.isArray(parsed.txs) ? parsed.txs : []
+      balance: typeof parsed.balance === 'string' ? parsed.balance : '0',
+      rewards: typeof parsed.rewards === 'string' ? parsed.rewards : '0',
+      txs: Array.isArray(parsed.txs) ? parsed.txs : [],
     };
   } catch {
-    return { balance: "0", rewards: "0", txs: [] };
+    return { balance: '0', rewards: '0', txs: [] };
   }
 }
 
+function saveVault(walletAddress: string, network: StellarNetwork, vault: StoredVault) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(getStorageKey(walletAddress, network), JSON.stringify(vault));
 export function formatAmount(amount: string): string {
   const n = Number(amount);
   if (!Number.isFinite(n)) return amount;
@@ -355,6 +376,42 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
       const pendingTx: VaultTx = {
         id: createId(),
   const baseSdk = {
+    async getBalances({
+      walletAddress,
+      network,
+    }: {
+      walletAddress: string;
+      network: StellarNetwork;
+    }) {
+      await sleep(150);
+      const vault = loadVault(walletAddress, network);
+      return { balance: vault.balance, rewards: vault.rewards };
+    },
+    async getTransactions({
+      walletAddress,
+      network,
+    }: {
+      walletAddress: string;
+      network: StellarNetwork;
+    }) {
+      await sleep(150);
+      const vault = loadVault(walletAddress, network);
+      return vault.txs;
+    },
+    async deposit({
+      walletAddress,
+      network,
+      amount,
+    }: {
+      walletAddress: string;
+      network: StellarNetwork;
+      amount: string;
+    }) {
+      const tx: VaultTx = {
+        id: createId(),
+        type: 'deposit',
+        amount,
+        status: 'pending',
     async getBalances({ walletAddress, network }: { walletAddress: string; network: StellarNetwork }) {
       const vault = loadVault(walletAddress, network);
       return { balance: vault.balance, rewards: vault.rewards };
@@ -386,6 +443,19 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
       return { ...pendingTx, status: "success", hash: result.hash ?? pendingTx.id };
     },
 
+      const vault = loadVault(walletAddress, network);
+      vault.txs = [tx, ...vault.txs].slice(0, 25);
+      saveVault(walletAddress, network, vault);
+
+      await sleep(450);
+      const balance = Number(vault.balance) + Number(amount);
+      const rewards = Number(vault.rewards) + Number(amount) * 0.01;
+      const completed: VaultTx = { ...tx, status: 'success', hash: `SIM-${createId()}` };
+
+      const next: StoredVault = {
+        balance: toFixedString(balance),
+        rewards: toFixedString(rewards),
+        txs: [completed, ...vault.txs.filter((t) => t.id !== tx.id)].slice(0, 25),
     async withdraw({ walletAddress, network, amount }: { walletAddress: string; network: StellarNetwork; amount: string }): Promise<VaultTx> {
       const pendingTx: VaultTx = {
         id: createId(),
@@ -435,6 +505,18 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
 
       return completed;
     },
+    async withdraw({
+      walletAddress,
+      network,
+      amount,
+    }: {
+      walletAddress: string;
+      network: StellarNetwork;
+      amount: string;
+    }) {
+      const tx: VaultTx = {
+        id: createId(),
+        type: 'withdraw',
 
     async withdraw({ walletAddress, network, amount }: { walletAddress: string; network: StellarNetwork; amount: string }) {
       const txId = createId();
@@ -445,8 +527,8 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
         id: txId,
         type: "withdraw",
         amount,
-        status: "pending",
-        createdAt: new Date().toISOString()
+        status: 'pending',
+        createdAt: new Date().toISOString(),
       };
 
       saveVault(walletAddress, network, {
@@ -454,6 +536,14 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
         txs: [tx, ...vault.txs].slice(0, 25)
       });
 
+      await sleep(450);
+      const balance = Math.max(0, Number(vault.balance) - Number(amount));
+      const completed: VaultTx = { ...tx, status: 'success', hash: `SIM-${createId()}` };
+
+      const next: StoredVault = {
+        balance: toFixedString(balance),
+        rewards: vault.rewards,
+        txs: [completed, ...vault.txs.filter((t) => t.id !== tx.id)].slice(0, 25),
       await sleep(1);
 
       const fresh = loadVault(walletAddress, network);
@@ -474,6 +564,13 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
 
       return completed;
     },
+    async claimRewards({
+      walletAddress,
+      network,
+    }: {
+      walletAddress: string;
+      network: StellarNetwork;
+    }) {
 
     async claimRewards({ walletAddress, network }: { walletAddress: string; network: StellarNetwork }) {
       const txId = createId();
@@ -481,6 +578,10 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
       const vault = loadVault(walletAddress, network);
 
       const tx: VaultTx = {
+        id: createId(),
+        type: 'claim',
+        amount,
+        status: 'pending',
         id: txId,
         type: "claim",
         amount: vault.rewards,
@@ -503,6 +604,14 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
     withdraw: withErrorHandling(withApiResilience(baseSdk.withdraw, { timeout: 60000, retries: 1 }), "withdraw"),
     claimRewards: withErrorHandling(withApiResilience(baseSdk.claimRewards, { timeout: 60000, retries: 1 }), "claimRewards"),
 
+      await sleep(450);
+      const balance = Number(vault.balance) + Number(vault.rewards);
+      const completed: VaultTx = { ...tx, status: 'success', hash: `SIM-${createId()}` };
+
+      const next: StoredVault = {
+        balance: toFixedString(balance),
+        rewards: '0',
+        txs: [completed, ...vault.txs.filter((t) => t.id !== tx.id)].slice(0, 25),
       saveVault(walletAddress, network, {
         ...vault,
         txs: [tx, ...vault.txs].slice(0, 25)
@@ -527,10 +636,30 @@ export function createAxionveraVaultSdk(): AxionveraVaultSdk {
       });
 
       return completed;
-    }
+    },
   };
 
   return {
+    getBalances: withErrorHandling(
+      withApiResilience(baseSdk.getBalances, { timeout: 5000, retries: 2 }),
+      'getBalances'
+    ),
+    getTransactions: withErrorHandling(
+      withApiResilience(baseSdk.getTransactions, { timeout: 5000, retries: 2 }),
+      'getTransactions'
+    ),
+    deposit: withErrorHandling(
+      withApiResilience(baseSdk.deposit, { timeout: 10000, retries: 1 }),
+      'deposit'
+    ),
+    withdraw: withErrorHandling(
+      withApiResilience(baseSdk.withdraw, { timeout: 10000, retries: 1 }),
+      'withdraw'
+    ),
+    claimRewards: withErrorHandling(
+      withApiResilience(baseSdk.claimRewards, { timeout: 10000, retries: 1 }),
+      'claimRewards'
+    ),
     getBalances: withErrorHandling(withApiResilience(baseSdk.getBalances), "getBalances"),
     getTransactions: withErrorHandling(withApiResilience(baseSdk.getTransactions), "getTransactions"),
     deposit: withErrorHandling(withApiResilience(baseSdk.deposit), "deposit"),

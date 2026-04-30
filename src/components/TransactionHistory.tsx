@@ -1,3 +1,8 @@
+import { useMemo, useState } from 'react';
+import { formatBalance, truncateAddress } from '@/utils/formatters';
+import type { VaultTx, VaultTxType, VaultTxStatus } from '@/utils/contractHelpers';
+import CopyButton from './CopyButton';
+import { TransactionSkeleton } from './Skeletons';
 import { useMemo, useState } from "react";
 import { formatAmount, shortenAddress } from "@/utils/contractHelpers";
 import type { VaultTx, VaultTxType, VaultTxStatus } from "@/utils/contractHelpers";
@@ -13,6 +18,33 @@ type TransactionHistoryProps = {
   isClaiming: boolean;
 };
 
+type TypeFilter = 'all' | VaultTxType;
+type StatusFilter = 'all' | VaultTxStatus;
+
+const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
+  { value: 'all', label: 'All Types' },
+  { value: 'deposit', label: 'Deposit' },
+  { value: 'withdraw', label: 'Withdraw' },
+  { value: 'claim', label: 'Claim' },
+];
+
+const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'success', label: 'Success' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'failed', label: 'Failed' },
+];
+
+function statusStyles(status: VaultTx['status']) {
+  if (status === 'success') return 'border-emerald-900/50 bg-emerald-950/30 text-emerald-200';
+  if (status === 'failed') return 'border-rose-900/50 bg-rose-950/30 text-rose-200';
+  return 'border-border-primary bg-background-secondary/30 text-text-primary';
+}
+
+function typeLabel(type: VaultTx['type']) {
+  if (type === 'deposit') return 'Deposit';
+  if (type === 'withdraw') return 'Withdraw';
+  return 'Claim';
 type TypeFilter = "all" | VaultTxType;
 type StatusFilter = "all" | VaultTxStatus;
 
@@ -132,7 +164,7 @@ function typeLabel(type: VaultTxType) {
 }
 
 const selectClassName =
-  "rounded-lg border border-border-primary bg-background-secondary/30 px-3 py-1.5 text-xs text-text-primary outline-none transition hover:bg-background-secondary/60 focus:border-axion-500";
+  'rounded-lg border border-border-primary bg-background-secondary/30 px-3 py-1.5 text-xs text-text-primary outline-none transition hover:bg-background-secondary/60 focus:border-axion-500';
 
 export default function TransactionHistory({
   isConnected,
@@ -141,6 +173,9 @@ export default function TransactionHistory({
   transactions: externalTransactions,
   onClaimRewards,
   isClaiming,
+}: TransactionHistoryProps) {
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
 }: Props) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -165,12 +200,13 @@ export default function TransactionHistory({
   // FILTER
   const filtered = useMemo(() => {
     return transactions.filter((tx) => {
-      if (typeFilter !== "all" && tx.type !== typeFilter) return false;
-      if (statusFilter !== "all" && tx.status !== statusFilter) return false;
+      if (typeFilter !== 'all' && tx.type !== typeFilter) return false;
+      if (statusFilter !== 'all' && tx.status !== statusFilter) return false;
       return true;
     });
   }, [transactions, typeFilter, statusFilter]);
 
+  const hasActiveFilter = typeFilter !== 'all' || statusFilter !== 'all';
   const sortedTransactions = useMemo(() => {
     const sorted = [...filteredTransactions];
     sorted.sort((a, b) => {
@@ -244,6 +280,8 @@ export default function TransactionHistory({
           <div className="text-sm font-semibold text-text-primary">Transaction history</div>
           <div className="mt-1 text-xs text-text-muted">
             {isConnected && publicKey
+              ? `Recent vault activity for ${truncateAddress(publicKey)}`
+              : 'Connect a wallet to view history.'}
               ? `Recent vault activity for ${shortenAddress(publicKey, 6)}`
               : "Connect a wallet to view history."}
             {isConnected && address && !useMockData 
@@ -334,6 +372,22 @@ export default function TransactionHistory({
             </button>
           )}
         </div>
+        <button
+          type="button"
+          onClick={onClaimRewards}
+          disabled={!isConnected || isClaiming}
+          aria-label={isClaiming ? 'Claiming rewards' : 'Claim your earned rewards'}
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isClaiming ? 'Claiming...' : 'Claim Rewards'}
+        </button>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2">
+          <label htmlFor="type-filter" className="text-xs text-text-muted">
+            Type
+          </label>
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -348,6 +402,11 @@ export default function TransactionHistory({
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="status-filter" className="text-xs text-text-muted">
+            Status
+          </label>
         </label>
         <label className="flex items-center gap-2 text-xs text-text-muted">
           Status
@@ -376,8 +435,8 @@ export default function TransactionHistory({
             aria-label="Clear all transaction filters"
             className="text-xs text-axion-400 transition hover:text-axion-300 focus:outline-none focus:underline"
             onClick={() => {
-              setTypeFilter("all");
-              setStatusFilter("all");
+              setTypeFilter('all');
+              setStatusFilter('all');
             }}
             className="text-xs text-axion-400 transition hover:text-axion-300"
           >
@@ -503,6 +562,11 @@ export default function TransactionHistory({
         </select>
       </div>
 
+      <div
+        className="mt-5 overflow-hidden rounded-2xl border border-border-primary"
+        role="table"
+        aria-label="Transaction History"
+      >
       <div className="mt-5 overflow-hidden rounded-2xl border border-border-primary" role="table" aria-label="Transaction History">
         <div
           className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary font-semibold"
@@ -526,6 +590,8 @@ export default function TransactionHistory({
             <div className="px-4 py-6 text-sm text-text-secondary" role="row">
               <div role="cell" className="col-span-4">
                 {hasActiveFilter
+                  ? 'No transactions match the selected filters.'
+                  : 'No transactions yet.'}
                   ? "No transactions match the selected filters."
                   : "No transactions yet."}
               </div>

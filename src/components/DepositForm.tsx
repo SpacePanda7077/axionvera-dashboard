@@ -14,6 +14,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
 import { depositSchema, DepositFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
+import { truncateAddress } from '@/utils/formatters';
 import { shortenAddress, type TransactionSimulation } from '@/utils/contractHelpers';
 import { ConfirmTransactionModal } from './ConfirmTransactionModal';
 import { createDepositSchema, DepositFormData } from '@/utils/validation';
@@ -110,13 +111,13 @@ export default function DepositForm({
     register,
     handleSubmit,
     reset,
-    formState: { errors, isValid, isDirty }
+    formState: { isValid, isDirty, errors },
   } = useForm<DepositFormData>({
     resolver: zodResolver(depositSchema),
     mode: 'onChange',
     defaultValues: {
-      amount: '' as any,
-    }
+      amount: '' as unknown as number,
+    },
   });
     setValue,
     formState: { errors, isValid, isDirty }
@@ -133,6 +134,8 @@ export default function DepositForm({
     if (!pendingAmount) return;
 
     try {
+      await onDeposit(data.amount.toString());
+      notify.success('Deposit Successful', `You have deposited ${data.amount} tokens.`);
       await onDeposit(pendingAmount);
       notify.success("Deposit Successful", `You have deposited ${pendingAmount} tokens.`);
       reset();
@@ -229,6 +232,30 @@ export default function DepositForm({
   const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating || !!isNetworkMismatch;
 
   return (
+    <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
+      <div className="text-sm font-semibold text-text-primary">Deposit</div>
+      <div className="mt-1 text-xs text-text-muted">Deposit tokens into the Axionvera vault.</div>
+
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-5 space-y-4">
+        <FormInput
+          {...register('amount')}
+          id="deposit-amount"
+          inputMode="decimal"
+          placeholder="0.0"
+          label="Amount"
+          required
+          error={errors.amount}
+          helperText={
+            <span>
+              Enter amount between 0.0001 and 10,000{' '}
+              <AppTooltip content={GLOSSARY.slippage}>
+                <span className="cursor-help font-semibold uppercase tracking-wider text-axion-500 underline decoration-dotted decoration-axion-500/50 underline-offset-2 transition-colors hover:text-axion-400">
+                  Slippage
+                </span>
+              </AppTooltip>
+            </span>
+          }
+        />
     <>
       <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
         <div className="text-sm font-semibold text-text-primary">Deposit</div>
@@ -286,6 +313,31 @@ export default function DepositForm({
               }`}
           >
             <div className="font-medium">
+              {status === 'pending'
+                ? 'Deposit transaction pending'
+                : status === 'success'
+                  ? 'Deposit completed'
+                  : 'Deposit failed'}
+            </div>
+            {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
+            {transactionHash ? (
+              <div className="mt-1 text-xs opacity-80">
+                Tx: {truncateAddress(transactionHash, 8, 8)}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        <button
+          type="submit"
+          disabled={shouldDisableSubmit}
+          aria-label={isSubmitting ? 'Submitting deposit' : 'Deposit tokens'}
+          className="w-full rounded-xl bg-axion-500 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-axion-500/20 transition hover:bg-axion-400 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSubmitting ? 'Submitting...' : 'Deposit'}
+        </button>
+      </form>
+    </section>
               {status === 'pending' ? 'Deposit transaction pending' : status === 'success' ? 'Deposit completed' : 'Deposit failed'}
           {status !== 'idle' && status !== 'success' ? (
             <div

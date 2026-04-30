@@ -13,6 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { FormInput } from './FormInput';
 import { createWithdrawSchema, WithdrawFormData } from '@/utils/validation';
 import { notify } from '@/utils/notifications';
+import { formatBalance, truncateAddress } from '@/utils/formatters';
 import { formatAmount, shortenAddress } from '@/utils/contractHelpers';
 import { useState } from 'react';
 import ConfirmTransactionModal from '@/components/modals/ConfirmTransactionModal';
@@ -69,14 +70,15 @@ export default function WithdrawForm({
     register,
     handleSubmit,
     reset,
+    formState: { errors, isValid, isDirty },
     setValue,
     formState: { errors, isValid, isDirty }
   } = useForm<WithdrawFormData>({
     resolver: zodResolver(createWithdrawSchema(numericBalance)),
     mode: 'onChange',
     defaultValues: {
-      amount: '' as any,
-    }
+      amount: '' as unknown as number,
+    },
   });
 
   // Set default amount from props when component mounts and wallet is connected
@@ -89,6 +91,8 @@ export default function WithdrawForm({
 
   const executeWithdraw = async (amount: string) => {
     try {
+      await onWithdraw(data.amount.toString());
+      notify.success('Withdrawal Successful', `You have withdrawn ${data.amount} tokens.`);
       await onWithdraw(amount);
       notify.success("Withdrawal Successful", `You have withdrawn ${amount} tokens.`);
       reset();
@@ -203,6 +207,10 @@ export default function WithdrawForm({
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
       <div className="text-sm font-semibold text-text-primary">Withdraw</div>
       <div className="mt-1 text-xs text-text-muted">Withdraw tokens from the Axionvera vault.</div>
+      <div className="mt-3 rounded-xl border border-border-primary bg-background-secondary/20 px-4 py-3 text-xs text-text-secondary">
+        Available balance:{' '}
+        <span className="font-medium text-text-primary">{formatBalance(balance)}</span>
+      </div>
       <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="mt-5 space-y-4">
 
       <form
@@ -239,7 +247,7 @@ export default function WithdrawForm({
           onChange={(v) => updateField('amount', v)}
           onBlur={() => handleBlur('amount')}
           error={errors.amount}
-          helperText={`Enter amount between 0.0001 and ${formatAmount(balance)}`}
+          helperText={`Enter amount between 0.0001 and ${formatBalance(balance)}`}
         />
 
         {txStep && status === 'pending' ? (
@@ -330,6 +338,11 @@ export default function WithdrawForm({
             }`}
           >
             <div className="font-medium">
+              {status === 'pending'
+                ? 'Withdrawal transaction pending'
+                : status === 'success'
+                  ? 'Withdrawal completed'
+                  : 'Withdrawal failed'}
               {status === 'pending' ? 'Confirming Transaction...' : 'Withdrawal failed'}
             </div>
             {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
@@ -402,13 +415,20 @@ export default function WithdrawForm({
             </div>
             {statusMessage ? <div className="mt-1 text-xs opacity-90">{statusMessage}</div> : null}
             {transactionHash ? (
-              <div className="mt-1 text-xs opacity-80">Tx: {shortenAddress(transactionHash, 8)}</div>
+              <div className="mt-1 text-xs opacity-80">
+                Tx: {truncateAddress(transactionHash, 8, 8)}
+              </div>
             ) : null}
           </div>
         ) : null}
 
         <button
           type="submit"
+          disabled={shouldDisableSubmit}
+          aria-label={isSubmitting ? 'Submitting withdrawal' : 'Withdraw tokens'}
+          className="w-full rounded-xl border border-border-primary bg-background-secondary/30 px-4 py-3 text-sm font-medium text-text-primary transition hover:bg-background-secondary/60 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isSubmitting ? 'Submitting...' : 'Withdraw'}
           disabled={shouldDisableSubmit || isFormSubmitting}
           aria-label={isFormSubmitting ? "Submitting withdrawal" : "Withdraw tokens"}
           className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-primary bg-background-secondary/30 px-4 py-3 text-sm font-medium text-text-primary transition hover:bg-background-secondary/60 disabled:cursor-not-allowed disabled:opacity-60"

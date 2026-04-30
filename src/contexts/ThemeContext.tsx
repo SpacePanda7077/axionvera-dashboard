@@ -20,11 +20,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const { theme, setTheme, resolvedTheme } = useNextTheme();
 
   return (
-    <ThemeContext.Provider value={{ 
-      theme: theme as Theme, 
-      setTheme: (t: Theme) => setTheme(t), 
-      resolvedTheme: resolvedTheme as ResolvedTheme 
-    }}>
+    <ThemeContext.Provider
+      value={{
+        theme: theme as Theme,
+        setTheme: (t: Theme) => setTheme(t),
+        resolvedTheme: resolvedTheme as ResolvedTheme,
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );
@@ -44,6 +46,7 @@ export function useTheme() {
   const context = useContext(ThemeContext);
   
   if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
     return nextTheme;
   // Always call hooks at the top level, never conditionally
   const context = useContext(ThemeContext);

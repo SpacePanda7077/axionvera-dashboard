@@ -1,3 +1,10 @@
+import { parsePositiveAmount, createAxionveraVaultSdk } from '../contractHelpers';
+
+// Mock apiResilience to bypass sleep/timeout logic
+jest.mock('../apiResilience', () => ({
+  withApiResilience: <T>(fn: T): T => fn,
+  withErrorHandling: <T>(fn: T): T => fn,
+  safeApiCall: async <T>(fn: () => Promise<T>): Promise<{ data: T }> => ({ data: await fn() }),
 import {
   shortenAddress,
   formatAmount,
@@ -71,6 +78,11 @@ jest.mock("../networkConfig", () => ({
   AXIONVERA_VAULT_CONTRACT_ID: "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSC4",
 }));
 
+describe('contractHelpers utility', () => {
+  describe('parsePositiveAmount', () => {
+    it('should parse valid positive amounts', () => {
+      expect(parsePositiveAmount('10.5')).toBe('10.5');
+    });
 import { nativeToScVal } from "stellar-sdk";
 
 function makeSimSuccess(retval: any) {
@@ -141,13 +153,43 @@ describe("createAxionveraVaultSdk", () => {
       const sdk = createAxionveraVaultSdk();
       const result = await sdk.getBalances({ walletAddress: WALLET, network: NETWORK });
   describe('createAxionveraVaultSdk', () => {
+    let sdk: ReturnType<typeof createAxionveraVaultSdk>;
+    const mockStorage: Record<string, string> = {};
+
+    beforeAll(() => {
+      // Mock window and localStorage globally for this test suite
+      const mockLocalStorage = {
+        getItem: jest.fn((key: string) => mockStorage[key] || null),
+        setItem: jest.fn((key: string, val: string) => {
+          mockStorage[key] = val;
+        }),
+        removeItem: jest.fn((key: string) => {
+          delete mockStorage[key];
+        }),
+        clear: jest.fn(() => {
+          Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
+        }),
+      };
+
+      if (typeof window === 'undefined') {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (global as any).window = { localStorage: mockLocalStorage } as unknown as Window &
+          typeof globalThis;
+      } else {
+        Object.defineProperty(window, 'localStorage', {
+          value: mockLocalStorage,
+          writable: true,
+        });
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let sdk: any;
 
     beforeAll(() => {
       // Provide a stable UUID so hash values are deterministic in tests.
       (global as any).crypto = {
-        randomUUID: () => 'test-uuid'
-      };
+        randomUUID: () => 'test-uuid',
+      } as unknown as Crypto;
     });
 
     beforeEach(() => {
@@ -155,6 +197,8 @@ describe("createAxionveraVaultSdk", () => {
       // and wipe it clean between tests.
       localStorage.clear();
       sdk = createAxionveraVaultSdk();
+      // Clear mockStorage manually
+      Object.keys(mockStorage).forEach((key) => delete mockStorage[key]);
     });
 
     afterAll(() => {
@@ -189,6 +233,12 @@ describe("createAxionveraVaultSdk", () => {
       const txs = await sdk.getTransactions({ walletAddress: WALLET, network: NETWORK });
       expect(txs).toEqual([]);
     it('should withdraw (mocked)', async () => {
+      const key = 'axionvera:vault:testnet:G_WIT';
+      mockStorage[key] = JSON.stringify({
+        balance: '100',
+        rewards: '0',
+        txs: [],
+      });
       // Seed initial state via the real localStorage so contractHelpers reads it.
       localStorage.setItem(
         'axionvera:vault:testnet:G_WIT',
@@ -212,6 +262,12 @@ describe("createAxionveraVaultSdk", () => {
       ).rejects.toThrow(/No compatible wallet/);
       expect(mockPrepareTransaction).toHaveBeenCalledTimes(1);
     it('should claim rewards (mocked)', async () => {
+      const key = 'axionvera:vault:testnet:G_CLA';
+      mockStorage[key] = JSON.stringify({
+        balance: '100',
+        rewards: '10',
+        txs: [],
+      });
       localStorage.setItem(
         'axionvera:vault:testnet:G_CLA',
         JSON.stringify({ balance: '100', rewards: '10', txs: [] })
@@ -234,6 +290,10 @@ describe("createAxionveraVaultSdk", () => {
         sdk.withdraw({ walletAddress: WALLET, network: NETWORK, amount: "10" })
       ).rejects.toThrow(/No compatible wallet/);
     });
+
+    it('should handle malformed storage gracefully', async () => {
+      const key = 'axionvera:vault:testnet:G_MAL';
+      mockStorage[key] = 'invalid-json';
   });
 
   describe("claimRewards", () => {
