@@ -74,20 +74,18 @@ export default function App({ Component, pageProps }: AppProps) {
     // fontFamily tokens and any CSS that references them directly.
     <div className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <ErrorBoundary>
-        <NextThemeProvider attribute="data-theme" defaultTheme="system" enableSystem>
-          <AppThemeProvider>
-            <WalletProvider>
-              <Component {...pageProps} />
-              <ThemeToggle />
-              <Toaster
-                position="top-right"
-                richColors
-                closeButton
-                duration={4000}
-              />
-            </WalletProvider>
-          </AppThemeProvider>
-        </NextThemeProvider>
+        <AppThemeProvider>
+          <WalletProvider>
+            <Component {...pageProps} />
+            <ThemeToggle />
+            <Toaster
+              position="top-right"
+              richColors
+              closeButton
+              duration={4000}
+            />
+          </WalletProvider>
+        </AppThemeProvider>
       </ErrorBoundary>
     </div>
   );

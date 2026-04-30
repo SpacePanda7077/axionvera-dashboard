@@ -1,5 +1,8 @@
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { useCallback, useMemo, useState } from "react";
 import { notify } from "@/utils/notifications";
+import { useVaultBalances } from "./useVaultBalances";
+import { useTransactionHistory } from "./useTransactionHistory";
 
 import {
   createAxionveraVaultSdk,
@@ -106,6 +109,43 @@ export function useVault({ walletAddress, sdk: providedSdk }: UseVaultArgs) {
   const balancesQuery = useVaultBalances(walletAddress);
   const transactionsQuery = useTransactionHistory(walletAddress);
 
+  // Sync query data with state
+  useEffect(() => {
+    if (balancesQuery.data && transactionsQuery.data) {
+      const balances = balancesQuery.data;
+      const transactions = transactionsQuery.data;
+      
+      setState((current) => ({
+        ...current,
+        balance: scvI128ToString(balances.balance) ?? balances.balance,
+        rewards: scvI128ToString(balances.rewards) ?? balances.rewards,
+        transactions,
+        isLoading: false
+      }));
+    } else if (balancesQuery.isLoading || transactionsQuery.isLoading) {
+      setState((current) => ({ ...current, isLoading: true }));
+    }
+  }, [balancesQuery.data, transactionsQuery.data, balancesQuery.isLoading, transactionsQuery.isLoading]);
+
+  // Handle query errors
+  useEffect(() => {
+    if (balancesQuery.error || transactionsQuery.error) {
+      const error = balancesQuery.error ?? transactionsQuery.error;
+      const message = getErrorMessage(error, "Failed to load vault state.");
+      notify.error("Vault Update Failed", message);
+      setState((current) => ({ ...current, isLoading: false, error: message }));
+    }
+  }, [balancesQuery.error, transactionsQuery.error]);
+
+  // Handle wallet disconnection
+  useEffect(() => {
+    if (!walletAddress) {
+      setState((current) => resetDisconnectedVaultState(current));
+    }
+  }, [walletAddress]);
+
+  // Extract variables from state
+  const { isLoading, error } = state;
   const isLoading = balancesQuery.isLoading || transactionsQuery.isLoading;
   const error = balancesQuery.error?.message ?? transactionsQuery.error?.message ?? state.error ?? null;
 

@@ -1,3 +1,7 @@
+import { useState, useEffect } from 'react';
+import { FormInput } from './FormInput';
+import TransactionSuccess from './TransactionSuccess';
+import { useFormValidation } from '@/hooks/useFormValidation';
 import { useState } from 'react';
 import { FormInput } from './FormInput';
 import { TransactionStepper } from './TransactionStepper';
@@ -54,6 +58,7 @@ export default function WithdrawForm({
   const [simulationData, setSimulationData] = useState<TransactionSimulation | null>(null);
   const [pendingAmount, setPendingAmount] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [withdrawAmount, setWithdrawAmount] = useState<string>('');
 
   const numericBalance = parseFloat(balance);
   const schema = createWithdrawSchema(numericBalance > 0 ? numericBalance : 10000);
@@ -82,6 +87,19 @@ export default function WithdrawForm({
   }, [defaultAmount, isConnected, setValue]);
   if (isLoading) return <FormSkeleton />;
 
+  const executeWithdraw = async (amount: string) => {
+    try {
+      await onWithdraw(amount);
+      notify.success("Withdrawal Successful", `You have withdrawn ${amount} tokens.`);
+      reset();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Withdrawal error:', error);
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleFormSubmit = async (data: WithdrawFormData) => {
   const { values, errors, shouldDisableSubmit, updateField, handleBlur, handleSubmit, reset, setValue } =
     useFormValidation({
       schema,
@@ -116,6 +134,7 @@ export default function WithdrawForm({
       await onWithdraw(pendingAmount);
       notify.success("Withdrawal Successful", `You have withdrawn ${pendingAmount} tokens.`);
     const amountStr = data.amount.toString();
+    setWithdrawAmount(amountStr);
     if (onSimulate) {
       setPendingAmount(amountStr);
       setIsModalOpen(true);
@@ -135,18 +154,56 @@ export default function WithdrawForm({
     }
   };
 
+  const {
+    isDirty,
+    isSubmitting: isFormSubmitting,
+    isValid,
+    getFieldProps,
+    reset,
+    handleSubmit,
+    updateField,
+  } = useFormValidation({
+    schema: createWithdrawSchema(numericBalance),
+    initialValues: { amount: 0 },
+    onSubmit: handleFormSubmit,
+  });
+
+  function handleMax() {
+    if (numericBalance > 0) {
+      updateField('amount', numericBalance);
+    }
+  }
+
+  // Show success modal when status changes to success and we have a hash
+  useEffect(() => {
+    if (status === 'success' && transactionHash) {
+      setIsModalOpen(true);
+      notify.success("Withdrawal Successful", `You have withdrawn ${withdrawAmount} tokens.`);
+    }
+  }, [status, transactionHash, withdrawAmount]);
+    }
+  };
+
   const handleMax = () => {
     if (numericBalance > 0) {
       updateField('amount', numericBalance.toString());
     }
   };
 
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSimulationData(null);
+  };
+
+  const shouldDisableSubmit = !isConnected || !isValid() || !isDirty || isFormSubmitting || isSimulating;
+  const amountProps = getFieldProps('amount');
   const isDisabled = !isConnected || shouldDisableSubmit() || isSubmitting || isSimulating;
 
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
       <div className="text-sm font-semibold text-text-primary">Withdraw</div>
       <div className="mt-1 text-xs text-text-muted">Withdraw tokens from the Axionvera vault.</div>
+      <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="mt-5 space-y-4">
 
       <form
         onSubmit={(e) => {
@@ -172,6 +229,7 @@ export default function WithdrawForm({
         </div>
 
         <FormInput
+          {...amountProps}
           id="withdraw-amount"
           inputMode="decimal"
           placeholder="0.0"
@@ -349,6 +407,42 @@ export default function WithdrawForm({
           </div>
         ) : null}
 
+        <button
+          type="submit"
+          disabled={shouldDisableSubmit || isFormSubmitting}
+          aria-label={isFormSubmitting ? "Submitting withdrawal" : "Withdraw tokens"}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border-primary bg-background-secondary/30 px-4 py-3 text-sm font-medium text-text-primary transition hover:bg-background-secondary/60 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {isFormSubmitting ? (
+            <>
+              <svg
+                className="h-4 w-4 animate-spin"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
+              </svg>
+              Withdrawing...
+            </>
+          ) : (
+            "Withdraw"
+          )}
+        </button>
+      </form>
           <button
             type="submit"
             disabled={shouldDisableSubmit}

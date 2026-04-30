@@ -40,6 +40,11 @@ function useNextThemeSafe() {
 }
 
 export function useTheme() {
+  const nextTheme = useNextTheme();
+  const context = useContext(ThemeContext);
+  
+  if (context === undefined) {
+    return nextTheme;
   // Always call hooks at the top level, never conditionally
   const context = useContext(ThemeContext);
   const nextTheme = useNextThemeSafe();

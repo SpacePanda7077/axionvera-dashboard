@@ -64,6 +64,22 @@ export default function DepositForm({
   const [simulationData, setSimulationData] = useState<TransactionSimulation | null>(null);
   const [pendingAmount, setPendingAmount] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [depositAmount, setDepositAmount] = useState<string>('');
+
+  const executeDeposit = async (amount: string) => {
+    try {
+      await onDeposit(amount);
+      notify.success("Deposit Successful", `You have deposited ${amount} tokens.`);
+      reset();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Deposit error:', error);
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleFormSubmit = async (data: DepositFormData) => {
+    const amountStr = data.amount.toString();
 
   const { values, errors, isDirty, isValid, shouldDisableSubmit, updateField, handleBlur, handleSubmit, reset } =
     useFormValidation({
@@ -155,6 +171,24 @@ export default function DepositForm({
     }
   };
 
+  const {
+    isDirty,
+    isSubmitting: isFormSubmitting,
+    isValid,
+    getFieldProps,
+    reset,
+    handleSubmit,
+  } = useFormValidation({
+    schema: depositSchema,
+    initialValues: { amount: 0 },
+    onSubmit: handleFormSubmit,
+  });
+
+  // Show success modal when status changes to success and we have a hash
+  useEffect(() => {
+    if (status === 'success' && transactionHash) {
+      setIsModalOpen(true);
+      notify.success("Deposit Successful", `You have deposited ${depositAmount} tokens.`);
   const isDisabled = !isConnected || shouldDisableSubmit() || isSubmitting || isSimulating;
   const executeDeposit = async (amount: string) => {
     try {
@@ -171,7 +205,7 @@ export default function DepositForm({
       console.error('Deposit error:', error);
       setIsModalOpen(false);
     }
-  };
+  }, [status, transactionHash, depositAmount]);
 
   const handleConfirm = () => {
     if (pendingAmount) {
@@ -190,6 +224,8 @@ export default function DepositForm({
     setSimulationData(null);
   };
 
+  const shouldDisableSubmit = !isConnected || !isValid() || !isDirty || isFormSubmitting || isSimulating;
+  const amountProps = getFieldProps('amount');
   const shouldDisableSubmit = !isConnected || !isValid || !isDirty || isSubmitting || isSimulating || !!isNetworkMismatch;
 
   return (
@@ -285,6 +321,12 @@ export default function DepositForm({
 
           <button
             type="submit"
+            disabled={shouldDisableSubmit || isFormSubmitting}
+            aria-label={isFormSubmitting ? "Submitting deposit" : "Deposit tokens"}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-axion-500 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-axion-500/20 transition hover:bg-axion-400 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isFormSubmitting ? (
+              <>
             disabled={isDisabled}
             aria-label={isSubmitting ? 'Submitting deposit' : 'Deposit tokens'}
             disabled={shouldDisableSubmit}

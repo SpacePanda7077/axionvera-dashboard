@@ -365,6 +365,11 @@ export default function TransactionHistory({
           <button
             type="button"
             onClick={clearFilters}
+            className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-white/15"
+          >
+            Reset Filters
+          </button>
+        ) : null}
             aria-label="Clear all transaction filters"
             className="text-xs text-axion-400 transition hover:text-axion-300 focus:outline-none focus:underline"
             onClick={() => { setTypeFilter("all"); setStatusFilter("all"); }}
