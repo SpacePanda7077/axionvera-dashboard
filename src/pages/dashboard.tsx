@@ -124,6 +124,7 @@ export default function DashboardPage() {
                     onDeposit={vault.deposit}
                     onSimulate={vault.simulateAction}
                     status={vault.depositStatus}
+                    txStep={vault.depositTxStep}
                     walletBalance={wallet.balance ? parseFloat(wallet.balance) : null}
                     isNetworkMismatch={wallet.isNetworkMismatch}
                     statusMessage={
@@ -146,6 +147,7 @@ export default function DashboardPage() {
                     onWithdraw={vault.withdraw}
                     onSimulate={vault.simulateAction}
                     status={vault.withdrawStatus}
+                    txStep={vault.withdrawTxStep}
                     isNetworkMismatch={wallet.isNetworkMismatch}
                     statusMessage={
                       vault.withdrawStatus === "pending"
