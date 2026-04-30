@@ -1,39 +1,54 @@
-import { useMemo, useState } from "react";
-import { formatAmount, shortenAddress } from "@/utils/contractHelpers";
-import type {
-  VaultTx,
-  VaultTxType,
-  VaultTxStatus,
+import { useEffect, useMemo, useState } from "react";
+import {
+  formatAmount,
+  shortenAddress,
+  type VaultTx,
+  type VaultTxType,
+  type VaultTxStatus,
 } from "@/utils/contractHelpers";
+import { NETWORK } from "@/utils/networkConfig";
 import CopyButton from "./CopyButton";
 import { TransactionSkeleton } from "./Skeletons";
 
-// Simple Popover component inline to avoid adding dependencies
-function FilterPopover({
-  children,
-  isOpen,
-  onClose
-}: {
-  children: React.ReactNode;
-  isOpen: boolean;
-  onClose: () => void;
-}) {
-  if (!isOpen) return null;
-  return (
-    <>
-      <div
-        className="fixed inset-0 z-40"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-xl border border-border-primary bg-background-primary p-4 shadow-lg">
-        {children}
-      </div>
-    </>
-  );
+const PAGE_SIZE = 10;
+
+type TypeFilter = "all" | VaultTxType;
+type StatusFilter = "all" | VaultTxStatus;
+
+const TYPE_OPTIONS = [
+  { value: "all", label: "All Types" },
+  { value: "deposit", label: "Deposit" },
+  { value: "withdraw", label: "Withdraw" },
+  { value: "claim", label: "Claim" },
+];
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All Statuses" },
+  { value: "success", label: "Success" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Failed" },
+];
+
+function statusStyles(status: VaultTxStatus) {
+  if (status === "success")
+    return "border-emerald-900/50 bg-emerald-950/30 text-emerald-200";
+  if (status === "failed")
+    return "border-rose-900/50 bg-rose-950/30 text-rose-200";
+  return "border-border-primary bg-background-secondary/30 text-text-primary";
 }
 
-type TransactionHistoryProps = {
+function typeLabel(type: VaultTxType) {
+  if (type === "deposit") return "Deposit";
+  if (type === "withdraw") return "Withdraw";
+  return "Claim";
+}
+
+function getExplorerUrl(hash: string) {
+  const networkPath = NETWORK === "mainnet" ? "public" : NETWORK;
+  return `https://stellar.expert/explorer/${networkPath}/tx/${hash}`;
+}
+
+type Props = {
   isConnected: boolean;
   publicKey: string | null;
   isLoading: boolean;
@@ -42,42 +57,6 @@ type TransactionHistoryProps = {
   isClaiming: boolean;
 };
 
-type TypeFilter = "all" | VaultTxType;
-type StatusFilter = "all" | VaultTxStatus;
-type SortKey = "createdAt" | "amount";
-type SortDirection = "asc" | "desc";
-
-const TYPE_OPTIONS: { value: TypeFilter; label: string }[] = [
-  { value: "all", label: "All Types" },
-  { value: "deposit", label: "Deposit" },
-  { value: "withdraw", label: "Withdraw" },
-  { value: "claim", label: "Claim" },
-];
-
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "All Statuses" },
-  { value: "success", label: "Success" },
-  { value: "pending", label: "Pending" },
-  { value: "failed", label: "Failed" },
-];
-
-function statusStyles(status: VaultTx["status"]) {
-  if (status === "success")
-    return "border-emerald-900/50 bg-emerald-950/30 text-emerald-200";
-  if (status === "failed")
-    return "border-rose-900/50 bg-rose-950/30 text-rose-200";
-  return "border-border-primary bg-background-secondary/30 text-text-primary";
-}
-
-function typeLabel(type: VaultTx["type"]) {
-  if (type === "deposit") return "Deposit";
-  if (type === "withdraw") return "Withdraw";
-  return "Claim";
-}
-
-const selectClassName =
-  "rounded-lg border border-border-primary bg-background-secondary/30 px-3 py-1.5 text-xs text-text-primary outline-none transition hover:bg-background-secondary/60 focus:border-axion-500";
-
 export default function TransactionHistory({
   isConnected,
   publicKey,
@@ -85,229 +64,157 @@ export default function TransactionHistory({
   transactions,
   onClaimRewards,
   isClaiming,
-}: TransactionHistoryProps) {
+}: Props) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [startDate, setStartDate] = useState<string>("");
-  const [endDate, setEndDate] = useState<string>("");
-  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
-  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredTransactions = useMemo(() => {
+  // FILTER
+  const filtered = useMemo(() => {
     return transactions.filter((tx) => {
       if (typeFilter !== "all" && tx.type !== typeFilter) return false;
       if (statusFilter !== "all" && tx.status !== statusFilter) return false;
-
-      const txDate = new Date(tx.createdAt).getTime();
-
-      if (startDate) {
-        const startTime = new Date(startDate).setHours(0, 0, 0, 0);
-        if (txDate < startTime) return false;
-      }
-
-      if (endDate) {
-        const endTime = new Date(endDate).setHours(23, 59, 59, 999);
-        if (txDate > endTime) return false;
-      }
-
       return true;
     });
-  }, [transactions, typeFilter, statusFilter, startDate, endDate]);
+  }, [transactions, typeFilter, statusFilter]);
 
-  const sortedTransactions = useMemo(() => {
-    const sorted = [...filteredTransactions];
-    sorted.sort((a, b) => {
-      const directionFactor = sortDirection === "asc" ? 1 : -1;
-      if (sortKey === "amount") {
-        return (Number(a.amount) - Number(b.amount)) * directionFactor;
-      }
-      return (
-        (new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()) *
-        directionFactor
-      );
-    });
-    return sorted;
-  }, [filteredTransactions, sortKey, sortDirection]);
+  // SORT (latest first)
+  const sorted = useMemo(() => {
+    return [...filtered].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() -
+        new Date(a.createdAt).getTime()
+    );
+  }, [filtered]);
 
-  const hasActiveFilter = typeFilter !== "all" || statusFilter !== "all" || startDate !== "" || endDate !== "";
+  // PAGINATION
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 
-  function toggleSort(nextKey: SortKey) {
-    if (sortKey === nextKey) {
-      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
-      return;
-    }
-    setSortKey(nextKey);
-    setSortDirection("desc");
-  }
+  useEffect(() => {
+    setCurrentPage((p) => Math.min(p, totalPages));
+  }, [totalPages]);
 
-  const clearFilters = () => {
-    setTypeFilter("all");
-    setStatusFilter("all");
-    setStartDate("");
-    setEndDate("");
-  };
+  const currentItems = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return sorted.slice(start, start + PAGE_SIZE);
+  }, [sorted, currentPage]);
+
+  const hasTransactions = sorted.length > 0;
 
   return (
     <section className="rounded-2xl border border-border-primary bg-background-primary/30 p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      {/* HEADER */}
+      <div className="flex justify-between mb-4">
         <div>
-          <div className="text-sm font-semibold text-text-primary">Transaction History</div>
-          <div className="mt-1 text-xs text-text-muted">
+          <h2 className="text-sm font-semibold text-text-primary">
+            Transaction History
+          </h2>
+          <p className="text-xs text-text-muted">
             {isConnected && publicKey
-              ? `Recent vault activity for ${shortenAddress(publicKey, 6)}`
-              : "Connect a wallet to view history."}
-          </div>
+              ? `Recent activity for ${shortenAddress(publicKey, 6)}`
+              : "Connect wallet"}
+          </p>
         </div>
+
         <button
-          type="button"
           onClick={onClaimRewards}
           disabled={!isConnected || isClaiming}
-          aria-label={
-            isClaiming ? "Claiming rewards" : "Claim your earned rewards"
-          }
-          className="rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-text-primary transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-xl bg-white/10 px-4 py-2 text-sm"
         >
           {isClaiming ? "Claiming..." : "Claim Rewards"}
         </button>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2">
-          <label htmlFor="type-filter" className="text-xs text-text-muted">
-            Type
-          </label>
-          <select
-            id="type-filter"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
-            className={selectClassName}
-            aria-label="Filter transactions by type"
-          >
-            {TYPE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="status-filter" className="text-xs text-text-muted">
-            Status
-          </label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className={selectClassName}
-            aria-label="Filter transactions by status"
-          >
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-        {hasActiveFilter ? (
-          <button
-            type="button"
-            onClick={() => { setTypeFilter("all"); setStatusFilter("all"); }}
-            aria-label="Clear all transaction filters"
-            className="text-xs text-axion-400 transition hover:text-axion-300 focus:outline-none focus:underline"
-          >
-            {isClaiming ? "Claiming..." : "Claim Rewards"}
-          </button>
-        </div>
+      {/* FILTERS */}
+      <div className="flex gap-3 mb-4">
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+          className="rounded bg-background-secondary px-2 py-1"
+        >
+          {TYPE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          className="rounded bg-background-secondary px-2 py-1"
+        >
+          {STATUS_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
 
-      <div
-        className="mt-5 overflow-hidden rounded-2xl border border-border-primary"
-        role="table"
-        aria-label="Transaction History"
-        aria-busy={isLoading}
-      >
-        <div
-          className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] gap-3 bg-background-secondary/20 px-4 py-3 text-xs font-semibold text-text-secondary"
-          role="row"
-        >
-          <div role="columnheader">
-            <button
-              type="button"
-              onClick={() => toggleSort("createdAt")}
-              className="flex items-center gap-1 hover:text-text-primary"
-            >
-              Type
-            </button>
+      {/* TABLE */}
+      <div className="border rounded-xl overflow-hidden">
+        {isLoading ? (
+          <TransactionSkeleton />
+        ) : !hasTransactions ? (
+          <div className="p-6 text-center text-text-muted">
+            No transactions yet
           </div>
-          <div role="columnheader">
-            <button
-              type="button"
-              onClick={() => toggleSort("amount")}
-              className="flex items-center gap-1 hover:text-text-primary"
+        ) : (
+          currentItems.map((tx) => (
+            <div
+              key={tx.id}
+              className="grid grid-cols-4 gap-3 p-3 border-b"
             >
-              Amount {sortKey === "amount" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
-            </button>
-          </div>
-          <div role="columnheader">
-            <button
-              type="button"
-              onClick={() => toggleSort("createdAt")}
-              className="flex items-center gap-1 hover:text-text-primary"
-            >
-              Date {sortKey === "createdAt" ? (sortDirection === "asc" ? "↑" : "↓") : "↕"}
-            </button>
-          </div>
-          <div role="columnheader">Status</div>
-        </div>
+              <div>{typeLabel(tx.type)}</div>
+              <div>{formatAmount(tx.amount)}</div>
+              <div className="text-xs">
+                {new Date(tx.createdAt).toLocaleString()}
+              </div>
+              <div>
+                <span className={`px-2 py-1 rounded ${statusStyles(tx.status)}`}>
+                  {tx.status}
+                </span>
 
-        <div className="divide-y divide-border-primary" role="rowgroup">
-          {isLoading ? (
-            <TransactionSkeleton />
-          ) : sortedTransactions.length === 0 ? (
-            <div className="px-4 py-6 text-sm text-text-secondary" role="row">
-              <div role="cell" className="col-span-4">
-                {hasActiveFilter
-                  ? "No transactions match the selected filters."
-                  : "No transactions yet."}
+                {tx.hash && (
+                  <div className="text-xs mt-1 flex gap-1">
+                    <a
+                      href={getExplorerUrl(tx.hash)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline"
+                    >
+                      view
+                    </a>
+                    <CopyButton text={tx.hash} label="Copy" size="sm" />
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            sortedTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="grid grid-cols-[1.2fr_1fr_1fr_0.9fr] items-center gap-3 px-4 py-3 text-sm"
-                role="row"
-              >
-                <div className="text-text-primary" role="cell">
-                  {typeLabel(tx.type)}
-                </div>
-                <div className="text-text-primary" role="cell">
-                  {formatAmount(tx.amount)}
-                </div>
-                <div className="text-text-muted" role="cell">
-                  {new Date(tx.createdAt).toLocaleString()}
-                </div>
-                <div role="cell">
-                  <span
-                    className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${statusStyles(tx.status)}`}
-                  >
-                    {tx.status}
-                  </span>
-                  {tx.hash ? (
-                    <div className="mt-1 flex items-center gap-1 text-xs text-text-muted">
-                      <span>{shortenAddress(tx.hash, 8)}</span>
-                      <CopyButton text={tx.hash} label="Copy hash" size="sm" />
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+          ))
+        )}
       </div>
 
-      {hasActiveFilter && !isLoading && sortedTransactions.length > 0 ? (
-        <div className="mt-3 text-xs text-text-muted">
-          Showing {sortedTransactions.length} of {transactions.length} transactions
+      {/* PAGINATION */}
+      {hasTransactions && (
+        <div className="flex justify-between mt-4 text-xs">
+          <span>
+            Page {currentPage} / {totalPages}
+          </span>
+
+          <div className="flex gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => p - 1)}
+              disabled={currentPage === 1}
+            >
+              Prev
+            </button>
+
+            <button
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
         </div>
-      ) : null}
+      )}
     </section>
   );
 }
