@@ -1,12 +1,14 @@
 import dynamic from "next/dynamic";
 import Head from "next/head";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import BalanceCard from "@/components/BalanceCard";
 import DepositForm from "@/components/DepositForm";
 import Navbar from "@/components/Navbar";
 import NetworkMismatchBanner from "@/components/NetworkMismatchBanner";
 import Sidebar from "@/components/Sidebar";
-import { TransactionSkeleton } from "@/components/Skeletons";
+import { TransactionSkeleton, ChartSkeleton } from "@/components/Skeletons";
 import WithdrawForm from "@/components/WithdrawForm";
 
 const TransactionHistory = dynamic(
@@ -21,9 +23,7 @@ import { useWalletContext } from "@/hooks/useWallet";
 
 const AnalyticsChart = dynamic(() => import("@/components/AnalyticsChart"), {
   ssr: false,
-  loading: () => (
-    <div className="h-[400px] w-full animate-pulse rounded-2xl border border-border-primary bg-background-primary/30" />
-  ),
+  loading: () => <ChartSkeleton />,
 });
 
 export default function DashboardPage() {
@@ -31,8 +31,39 @@ export default function DashboardPage() {
   // TODO: add wallet options
   // TODO: add governance interface
 
+  const searchParams = useSearchParams();
   const wallet = useWalletContext();
   const vault = useVault({ walletAddress: wallet.publicKey });
+
+  // URL query parameter state
+  const [activeTab, setActiveTab] = useState<TabType>("deposit");
+  const [prefilledAmount, setPrefilledAmount] = useState<string>("");
+
+  // Handle URL query parameters
+  useEffect(() => {
+    const action = searchParams.get("action");
+    const amount = searchParams.get("amount");
+
+    // Set the active tab based on action parameter
+    if (action === "deposit") {
+      setActiveTab("deposit");
+    } else if (action === "withdraw") {
+      setActiveTab("withdraw");
+    }
+
+    // Pre-fill the amount if provided
+    if (amount) {
+      setPrefilledAmount(amount);
+    }
+  }, [searchParams]);
+
+  // Auto-trigger wallet connection if not connected and action is present
+  useEffect(() => {
+    const action = searchParams.get("action");
+    if (action && !wallet.isConnected && !wallet.isConnecting) {
+      wallet.connect();
+    }
+  }, [searchParams, wallet.isConnected, wallet.isConnecting, wallet.connect]);
 
   return (
     <>
@@ -69,6 +100,7 @@ export default function DashboardPage() {
                   <DepositForm
                     isConnected={wallet.isConnected}
                     isSubmitting={vault.isSubmitting}
+                    isLoading={vault.isLoading}
                     onDeposit={vault.deposit}
                     onSimulate={vault.simulateAction}
                     status={vault.depositStatus}
@@ -84,10 +116,12 @@ export default function DashboardPage() {
                             : null
                     }
                     transactionHash={vault.depositHash}
+                    defaultAmount={activeTab === "deposit" ? prefilledAmount : ""}
                   />
                   <WithdrawForm
                     isConnected={wallet.isConnected}
                     isSubmitting={vault.isSubmitting}
+                    isLoading={vault.isLoading}
                     balance={vault.balance}
                     onWithdraw={vault.withdraw}
                     onSimulate={vault.simulateAction}
@@ -103,6 +137,7 @@ export default function DashboardPage() {
                             : null
                     }
                     transactionHash={vault.withdrawHash}
+                    defaultAmount={activeTab === "withdraw" ? prefilledAmount : ""}
                   />
                 </div>
                 <div className="mt-6">
