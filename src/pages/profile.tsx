@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Link from "next/link";
 import { useState } from "react";
 
 import Navbar from "@/components/Navbar";
@@ -14,7 +15,6 @@ import { shortenAddress } from "@/utils/contractHelpers";
 import CopyButton from "@/components/CopyButton";
 
 export default function ProfilePage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [isLoading, setIsLoading] = useState(true);
   const { isOpen } = useSidebar();
   const wallet = useWalletContext();
@@ -39,7 +39,18 @@ export default function ProfilePage() {
   return (
     <>
       <Head>
-        <title>Profile · Axionvera</title>
+        <title>Profile · AxionVera</title>
+        <meta name="description" content="Manage your AxionVera profile settings and security preferences. Update your account information and security options." />
+        
+        {/* Open Graph */}
+        <meta property="og:title" content="Profile · AxionVera" />
+        <meta property="og:description" content="Manage your AxionVera profile settings and security preferences." />
+        <meta property="og:type" content="website" />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Profile · AxionVera" />
+        <meta name="twitter:description" content="Manage your AxionVera profile settings and security preferences." />
       </Head>
       <main className="min-h-screen bg-background-primary">
         <Navbar
@@ -49,7 +60,28 @@ export default function ProfilePage() {
           onDisconnect={wallet.disconnect}
         />
         <div className={`transition-all duration-300 ${isOpen ? 'lg:pl-64' : ''}`}>
-          <div className="mx-auto max-w-4xl px-6 py-8">
+          <div className="mx-auto max-w-7xl px-6 py-8">
+            {/* Breadcrumb Navigation */}
+            <nav className="mb-6" aria-label="Breadcrumb">
+              <ol className="flex items-center space-x-2 text-sm">
+                <li>
+                  <Link 
+                    href="/dashboard" 
+                    className="text-text-muted hover:text-axion-400 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                </li>
+                <li className="text-text-muted">/</li>
+                <li>
+                  <span className="text-text-primary font-medium" aria-current="page">
+                    Profile
+                  </span>
+                </li>
+              </ol>
+            </nav>
+
+            {/* Page Header */}
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-text-primary">Profile Settings</h1>
               <p className="mt-2 text-text-muted">
@@ -107,23 +139,34 @@ export default function ProfilePage() {
             {/* Tab Content */}
             <div className="space-y-6">
               {isLoading ? (
+            {/* Two-Column Layout */}
+            {isLoading ? (
+              <div className="space-y-6">
                 <UserProfileSkeleton />
-              ) : activeTab === 'profile' ? (
-                <ProfileForm
-                  initialData={{
-                    firstName: 'John',
-                    lastName: 'Doe',
-                    email: 'john.doe@example.com',
-                    bio: 'Passionate about decentralized finance and blockchain technology.',
-                    website: 'https://johndoe.dev',
-                    location: 'San Francisco, CA',
-                  }}
-                  onSubmit={handleProfileSubmit}
-                />
-              ) : (
-                <SecuritySettingsForm onSubmit={handleSecuritySubmit} />
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
+                {/* Left Column - Profile Information */}
+                <div className="space-y-6">
+                  <ProfileForm
+                    initialData={{
+                      firstName: 'John',
+                      lastName: 'Doe',
+                      email: 'john.doe@example.com',
+                      bio: 'Passionate about decentralized finance and blockchain technology.',
+                      website: 'https://johndoe.dev',
+                      location: 'San Francisco, CA',
+                    }}
+                    onSubmit={handleProfileSubmit}
+                  />
+                </div>
+
+                {/* Right Column - Security Settings */}
+                <div className="space-y-6">
+                  <SecuritySettingsForm onSubmit={handleSecuritySubmit} />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>
